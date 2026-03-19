@@ -23,16 +23,18 @@ class Custom_Breadcrumb_Builder
     {
         $this->items = [];
 
-        $this->add_home();
+        $settings = $this->config->get_settings();
+        $has_rules = !empty($settings['rules']);
 
-        // Chercher une règle applicable
         $rule = $this->find_applicable_rule();
 
-        if ($rule && !empty($rule['enabled'])) {
-            // Utiliser la règle configurée
+        if ($rule) {
+            // Règle correspondante trouvée : l'appliquer
+            $this->add_home();
             $this->build_from_rule($rule);
-        } else {
-            // Fallback sur le comportement par défaut
+        } elseif (!$has_rules) {
+            // Aucune règle configurée : comportement par défaut (fallback)
+            $this->add_home();
             switch ($this->context->get_type()) {
                 case 'singular':
                     $this->build_singular();
@@ -54,6 +56,7 @@ class Custom_Breadcrumb_Builder
                     break;
             }
         }
+        // Règles configurées mais aucune ne correspond → tableau vide → pas de rendu
 
         return apply_filters('custom_breadcrumb_items', $this->items, $this->context);
     }

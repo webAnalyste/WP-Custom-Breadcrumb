@@ -25,28 +25,238 @@ class Custom_Breadcrumb_Builder
 
         $this->add_home();
 
-        switch ($this->context->get_type()) {
-            case 'singular':
-                $this->build_singular();
-                break;
-            case 'taxonomy':
-                $this->build_taxonomy();
-                break;
-            case 'post_type_archive':
-                $this->build_post_type_archive();
-                break;
-            case 'search':
-                $this->build_search();
-                break;
-            case 'author':
-                $this->build_author();
-                break;
-            case '404':
-                $this->build_404();
-                break;
+        // Chercher une règle applicable
+        $rule = $this->find_applicable_rule();
+
+        if ($rule && !empty($rule['enabled'])) {
+            // Utiliser la règle configurée
+            $this->build_from_rule($rule);
+        } else {
+            // Fallback sur le comportement par défaut
+            switch ($this->context->get_type()) {
+                case 'singular':
+                    $this->build_singular();
+                    break;
+                case 'taxonomy':
+                    $this->build_taxonomy();
+                    break;
+                case 'post_type_archive':
+                    $this->build_post_type_archive();
+                    break;
+                case 'search':
+                    $this->build_search();
+                    break;
+                case 'author':
+                    $this->build_author();
+                    break;
+                case '404':
+                    $this->build_404();
+                    break;
+            }
         }
 
         return apply_filters('custom_breadcrumb_items', $this->items, $this->context);
+    }
+
+    private function find_applicable_rule(): ?array
+    {
+        $settings = $this->config->get_settings();
+        
+        if (empty($settings['rules'])) {
+            return null;
+        }
+
+        $current_post_type = $this->context->get_post_type();
+        $context_type = $this->context->get_type();
+
+        foreach ($settings['rules'] as $rule) {
+            if (empty($rule['enabled'])) {
+                continue;
+            }
+
+            $rule_post_type = $rule['postType'] ?? '';
+
+            // Correspondance exacte du post type
+            if ($context_type === 'singular' && $rule_post_type === $current_post_type) {
+                return $rule;
+            }
+
+            // Archives de catégories
+            if ($context_type === 'taxonomy' && $rule_post_type === 'category') {
+                $term = $this->context->get_term();
+                if ($term && $term->taxonomy === 'category') {
+                    return $rule;
+                }
+            }
+
+            // Archives de tags
+            if ($context_type === 'taxonomy' && $rule_post_type === 'tag') {
+                $term = $this->context->get_term();
+                if ($term && $term->taxonomy === 'post_tag') {
+                    return $rule;
+                }
+            }
+
+            // Archives de taxonomies personnalisées
+            if (strpos($rule_post_type, 'tax_') === 0) {
+                $tax_name = substr($rule_post_type, 4);
+                $term = $this->context->get_term();
+                if ($term && $term->taxonomy === $tax_name) {
+                    return $rule;
+                }
+            }
+        }
+
+        return null;
+    }
+
+    private function build_from_rule(array $rule): void
+    {
+        // Ajouter les segments personnalisés
+        if (!empty($rule['segments'])) {
+            foreach ($rule['segments'] as $segment) {
+                $this->add_segment($segment);
+            }
+        }
+
+        // Afficher la taxonomie si demandé
+        if (!empty($rule['showTaxonomy']) && $this->context->is_singular()) {
+            $post = $this->context->get_post();
+            if ($post) {
+                $taxonomy = $rule['taxonomy'] ?? 'category';
+                $terms = get_the_terms($post->ID, $taxonomy);
+                
+                if (!empty($terms) && !is_wp_error($terms)) {
+                    $term = $terms[0];
+                    
+                    // Afficher les parents si demandé
+                    if (!empty($rule['showParents']) && $term->parent) {
+                        $ancestors = get_ancestors($term->term_id, $taxonomy);
+                        $ancestors = array_reverse($ancestors);
+                        
+                        foreach ($ancestors as $ancestor_id) {
+                            $ancestor = get_term($ancestor_id, $taxonomy);
+                            if ($ancestor && !is_wp_error($ancestor)) {
+                                $this->items[] = [
+                                    'label' => $ancestor->name,
+                                    'url' => get_term_link($ancestor),
+                                    'type' => 'taxonomy',
+                                ];
+                            }
+                        }
+                    }
+                    
+                    $this->items[] = [
+                        'label' => $term->name,
+                        'url' => get_term_link($term),
+                        'type' => 'taxonomy',
+                    ];
+                }
+            }
+        }
+
+        // Afficher les parents hiérarchiques pour les pages
+        if (!empty($rule['showParents']) && $this->context->is_singular()) {
+            $post = $this->context->get_post();
+            if ($post && $post->post_type === 'page' && $post->post_parent) {
+                $ancestors = get_post_ancestors($post);
+                $ancestors = array_reverse($ancestors);
+
+                foreach ($ancestors as $ancestor_id) {
+                    $this->items[] = [
+                        'label' => get_the_title($ancestor_id),
+                        'url' => get_permalink($ancestor_id),
+                        'type' => 'ancestor',
+                    ];
+                }
+            }
+        }
+
+        // Ajouter l'élément actuel
+        if ($this->context->is_singular()) {
+            $post = $this->context->get_post();
+            if ($post) {
+                $this->items[] = [
+                    'label' => get_the_title($post),
+                    'url' => '',
+                    'type' => 'current',
+                ];
+            }
+        } elseif ($this->context->is_taxonomy()) {
+            $term = $this->context->get_term();
+            if ($term) {
+                $this->items[] = [
+                    'label' => $term->name,
+                    'url' => '',
+                    'type' => 'current',
+                ];
+            }
+        }
+    }
+
+    private function add_segment(array $segment): void
+    {
+        $type = $segment['type'] ?? 'text';
+        $value = $segment['value'] ?? '';
+
+        if (empty($value)) {
+            return;
+        }
+
+        switch ($type) {
+            case 'text':
+                $this->items[] = [
+                    'label' => $value,
+                    'url' => '',
+                    'type' => 'segment',
+                ];
+                break;
+
+            case 'page':
+                $page_id = intval($value);
+                $page = get_post($page_id);
+                if ($page) {
+                    $this->items[] = [
+                        'label' => get_the_title($page),
+                        'url' => get_permalink($page),
+                        'type' => 'segment',
+                    ];
+                }
+                break;
+
+            case 'archive':
+                if ($value === 'blog') {
+                    $blog_url = get_post_type_archive_link('post') ?: home_url('/blog/');
+                    $this->items[] = [
+                        'label' => 'Blog',
+                        'url' => $blog_url,
+                        'type' => 'segment',
+                    ];
+                } else {
+                    $archive_url = get_post_type_archive_link($value);
+                    $post_type_obj = get_post_type_object($value);
+                    if ($post_type_obj) {
+                        $this->items[] = [
+                            'label' => $post_type_obj->labels->name,
+                            'url' => $archive_url ?: '',
+                            'type' => 'segment',
+                        ];
+                    }
+                }
+                break;
+
+            case 'taxonomy':
+                // Pour les taxonomies dans les segments, on affiche juste le nom
+                $tax_obj = get_taxonomy($value);
+                if ($tax_obj) {
+                    $this->items[] = [
+                        'label' => $tax_obj->labels->singular_name,
+                        'url' => '',
+                        'type' => 'segment',
+                    ];
+                }
+                break;
+        }
     }
 
     private function add_home(): void

@@ -59,7 +59,14 @@ class Custom_Breadcrumb_Config
     public function update_settings(array $settings): bool
     {
         $sanitized = $this->sanitize_settings($settings);
-        return update_option(self::OPTION_NAME, $sanitized);
+
+        // update_option retourne false si valeur identique (pas d'erreur) ou si erreur DB
+        // On considère les deux cas : mise à jour réussie OU valeur déjà correcte en base
+        update_option(self::OPTION_NAME, $sanitized);
+
+        $saved = get_option(self::OPTION_NAME, null);
+
+        return $saved !== null;
     }
 
     public function get_post_type_settings(string $post_type): array

@@ -181,16 +181,17 @@
         if (rule.segments && rule.segments.length > 0) {
             rule.segments.forEach(function (segment) {
                 preview += ' / ';
+                const customLabel = segment.label ? `<em>${segment.label}</em>` : null;
                 if (segment.type === 'text') {
-                    preview += segment.value;
+                    preview += customLabel || segment.value;
                 } else if (segment.type === 'page') {
-                    preview += `📄 Page #${segment.value}`;
+                    preview += customLabel || `📄 Page #${segment.value}`;
                 } else if (segment.type === 'archive') {
-                    preview += `📚 ${segment.value}`;
+                    preview += customLabel || `📚 ${segment.value}`;
                 } else if (segment.type === 'taxonomy') {
-                    preview += `🏷️ ${segment.value}`;
+                    preview += customLabel || `🏷️ ${segment.value}`;
                 } else {
-                    preview += '🔧 Personnalisé';
+                    preview += customLabel || '🔧 Personnalisé';
                 }
             });
         }
@@ -240,13 +241,16 @@
     }
 
     function addSegment(data) {
-        const $template = $('#segment-template').contents().clone();
+        const templateEl = document.getElementById('segment-template');
+        const clone = templateEl.content.cloneNode(true);
+        const $template = $(clone.querySelector('.cb-segment'));
         const segmentId = 'segment-' + (++segmentCounter);
 
         $template.attr('data-segment-id', segmentId);
 
         if (data) {
             $template.find('.segment-type').val(data.type || 'text');
+            $template.find('.segment-label').val(data.label || '');
 
             if (data.type === 'text') {
                 $template.find('.segment-text').val(data.value || '');
@@ -292,6 +296,7 @@
         $('#segments-container .cb-segment').each(function () {
             const $segment = $(this);
             const type = $segment.find('.segment-type').val();
+            const label = $segment.find('.segment-label').val().trim();
             let value = '';
 
             if (type === 'text') {
@@ -305,7 +310,11 @@
             }
 
             if (value) {
-                rule.segments.push({ type, value });
+                const segment = { type, value };
+                if (label) {
+                    segment.label = label;
+                }
+                rule.segments.push(segment);
             }
         });
 

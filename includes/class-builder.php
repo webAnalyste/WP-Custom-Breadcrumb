@@ -198,6 +198,7 @@ class Custom_Breadcrumb_Builder
     {
         $type = $segment['type'] ?? 'text';
         $value = $segment['value'] ?? '';
+        $custom_label = isset($segment['label']) && $segment['label'] !== '' ? $segment['label'] : null;
 
         if (empty($value)) {
             return;
@@ -206,7 +207,7 @@ class Custom_Breadcrumb_Builder
         switch ($type) {
             case 'text':
                 $this->items[] = [
-                    'label' => $value,
+                    'label' => $custom_label ?? $value,
                     'url' => '',
                     'type' => 'segment',
                 ];
@@ -217,7 +218,7 @@ class Custom_Breadcrumb_Builder
                 $page = get_post($page_id);
                 if ($page) {
                     $this->items[] = [
-                        'label' => get_the_title($page),
+                        'label' => $custom_label ?? get_the_title($page),
                         'url' => get_permalink($page),
                         'type' => 'segment',
                     ];
@@ -228,7 +229,7 @@ class Custom_Breadcrumb_Builder
                 if ($value === 'blog') {
                     $blog_url = get_post_type_archive_link('post') ?: home_url('/blog/');
                     $this->items[] = [
-                        'label' => 'Blog',
+                        'label' => $custom_label ?? 'Blog',
                         'url' => $blog_url,
                         'type' => 'segment',
                     ];
@@ -237,7 +238,7 @@ class Custom_Breadcrumb_Builder
                     $post_type_obj = get_post_type_object($value);
                     if ($post_type_obj) {
                         $this->items[] = [
-                            'label' => $post_type_obj->labels->name,
+                            'label' => $custom_label ?? $post_type_obj->labels->name,
                             'url' => $archive_url ?: '',
                             'type' => 'segment',
                         ];
@@ -246,11 +247,10 @@ class Custom_Breadcrumb_Builder
                 break;
 
             case 'taxonomy':
-                // Pour les taxonomies dans les segments, on affiche juste le nom
                 $tax_obj = get_taxonomy($value);
                 if ($tax_obj) {
                     $this->items[] = [
-                        'label' => $tax_obj->labels->singular_name,
+                        'label' => $custom_label ?? $tax_obj->labels->singular_name,
                         'url' => '',
                         'type' => 'segment',
                     ];

@@ -354,6 +354,22 @@
     width: 100%;
 }
 
+.cb-segment-label {
+    min-width: 180px;
+}
+
+.cb-segment-label input {
+    width: 100%;
+    font-size: 12px;
+    color: #6b7280;
+    border-style: dashed;
+}
+
+.cb-segment-label input:focus {
+    border-style: solid;
+    color: #111827;
+}
+
 .cb-segment-actions {
     display: flex;
     gap: 4px;

@@ -306,7 +306,7 @@ $pages = get_pages(['number' => 100]);
             <div class="cb-segment-value">
                 <!-- Le contenu change selon le type -->
                 <input type="text" class="segment-text widefat" placeholder="Texte à afficher...">
-                
+
                 <select class="segment-page widefat" style="display:none;">
                     <option value="">Sélectionner une page...</option>
                     <?php foreach ($pages as $page): ?>
@@ -330,6 +330,10 @@ $pages = get_pages(['number' => 100]);
                         <option value="<?php echo esc_attr($tax->name); ?>"><?php echo esc_html($tax->labels->singular_name); ?></option>
                     <?php endforeach; ?>
                 </select>
+            </div>
+
+            <div class="cb-segment-label">
+                <input type="text" class="segment-label widefat" placeholder="Label personnalisé (optionnel — remplace le texte auto)">
             </div>
 
             <div class="cb-segment-actions">

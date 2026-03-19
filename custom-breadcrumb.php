@@ -63,6 +63,7 @@ class Custom_Breadcrumb
 
         add_action('init', [$this, 'register_shortcode']);
         add_filter('the_content', [$this, 'maybe_auto_insert'], 10);
+        add_action('wp_body_open', [$this, 'maybe_render_body_open_breadcrumb']);
     }
 
     public function register_shortcode(): void
@@ -72,7 +73,7 @@ class Custom_Breadcrumb
 
     public function maybe_auto_insert(string $content): string
     {
-        if (!is_singular() && !is_archive() && !is_search()) {
+        if (is_admin() || !is_singular() || !in_the_loop() || !is_main_query()) {
             return $content;
         }
 
@@ -84,6 +85,25 @@ class Custom_Breadcrumb
         }
 
         return $content;
+    }
+
+    public function maybe_render_body_open_breadcrumb(): void
+    {
+        if (is_admin() || is_singular() || is_front_page()) {
+            return;
+        }
+
+        if (!is_home() && !is_archive() && !is_search()) {
+            return;
+        }
+
+        $settings = $this->config->get_global_settings();
+
+        if (empty($settings['auto_insert'])) {
+            return;
+        }
+
+        echo $this->renderer->render();
     }
 
     public function get_renderer(): Custom_Breadcrumb_Renderer

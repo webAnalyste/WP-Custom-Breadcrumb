@@ -2,20 +2,20 @@
  * Custom Breadcrumb - Interface avancée avec règles
  */
 
-(function($) {
+(function ($) {
     'use strict';
 
     let rules = [];
     let currentRuleId = null;
     let segmentCounter = 0;
 
-    $(document).ready(function() {
-        
+    $(document).ready(function () {
+
         // Charger les règles existantes
         loadRules();
 
         // Gestion des onglets
-        $('.cb-tab').on('click', function() {
+        $('.cb-tab').on('click', function () {
             const tab = $(this).data('tab');
             $('.cb-tab').removeClass('active');
             $(this).addClass('active');
@@ -24,7 +24,7 @@
         });
 
         // Ouvrir modal nouvelle règle
-        $('.cb-add-rule').on('click', function() {
+        $('.cb-add-rule').on('click', function () {
             currentRuleId = null;
             resetRuleForm();
             $('#modal-title').text('Nouvelle règle de breadcrumb');
@@ -32,37 +32,37 @@
         });
 
         // Fermer modal
-        $('.cb-modal-close, .cb-modal-overlay').on('click', function() {
+        $('.cb-modal-close, .cb-modal-overlay').on('click', function () {
             $('#rule-modal').removeClass('active');
         });
 
         // Ajouter un segment
-        $('#add-segment').on('click', function() {
+        $('#add-segment').on('click', function () {
             addSegment();
         });
 
         // Changer type de segment
-        $(document).on('change', '.segment-type', function() {
+        $(document).on('change', '.segment-type', function () {
             updateSegmentFields($(this).closest('.cb-segment'));
         });
 
         // Actions segments
-        $(document).on('click', '.segment-up', function() {
+        $(document).on('click', '.segment-up', function () {
             const $segment = $(this).closest('.cb-segment');
             $segment.prev('.cb-segment').before($segment);
         });
 
-        $(document).on('click', '.segment-down', function() {
+        $(document).on('click', '.segment-down', function () {
             const $segment = $(this).closest('.cb-segment');
             $segment.next('.cb-segment').after($segment);
         });
 
-        $(document).on('click', '.segment-delete', function() {
+        $(document).on('click', '.segment-delete', function () {
             $(this).closest('.cb-segment').remove();
         });
 
         // Toggle affichage taxonomie
-        $('#rule-show-taxonomy').on('change', function() {
+        $('#rule-show-taxonomy').on('change', function () {
             if ($(this).is(':checked')) {
                 $('#taxonomy-selector').show();
             } else {
@@ -71,30 +71,30 @@
         });
 
         // Sauvegarder règle
-        $('#save-rule').on('click', function() {
+        $('#save-rule').on('click', function () {
             saveRule();
         });
 
         // Sauvegarder tous les réglages
-        $('#save-settings').on('click', function() {
+        $('#save-settings').on('click', function () {
             saveAllSettings();
         });
 
         // Copier code
-        $('.cb-copy').on('click', function() {
+        $('.cb-copy').on('click', function () {
             const code = $(this).data('copy');
-            navigator.clipboard.writeText(code).then(function() {
+            navigator.clipboard.writeText(code).then(function () {
                 const $btn = $(this);
                 const originalText = $btn.html();
                 $btn.html('✅ Copié !');
-                setTimeout(function() {
+                setTimeout(function () {
                     $btn.html(originalText);
                 }, 2000);
             }.bind(this));
         });
 
         // Preview context change
-        $('#preview-context').on('change', function() {
+        $('#preview-context').on('change', function () {
             updatePreview();
         });
 
@@ -120,7 +120,7 @@
 
         $('.cb-no-rules').hide();
 
-        rules.forEach(function(rule, index) {
+        rules.forEach(function (rule, index) {
             const $card = $(`
                 <div class="cb-rule-card ${rule.enabled ? '' : 'disabled'}" data-rule-id="${index}">
                     <div class="cb-rule-header">
@@ -142,19 +142,21 @@
                 </div>
             `);
 
-            $card.find('.rule-toggle').on('change', function() {
+            $card.find('.rule-toggle').on('change', function () {
                 rules[index].enabled = $(this).is(':checked');
                 renderRules();
+                saveAllSettings();
             });
 
-            $card.find('.rule-edit').on('click', function() {
+            $card.find('.rule-edit').on('click', function () {
                 editRule(index);
             });
 
-            $card.find('.rule-delete').on('click', function() {
+            $card.find('.rule-delete').on('click', function () {
                 if (confirm('Supprimer cette règle ?')) {
                     rules.splice(index, 1);
                     renderRules();
+                    saveAllSettings();
                 }
             });
 
@@ -175,9 +177,9 @@
 
     function getRulePreview(rule) {
         let preview = '🏠 Accueil';
-        
+
         if (rule.segments && rule.segments.length > 0) {
-            rule.segments.forEach(function(segment) {
+            rule.segments.forEach(function (segment) {
                 preview += ' / ';
                 if (segment.type === 'text') {
                     preview += segment.value;
@@ -221,7 +223,7 @@
         $('#rule-enabled').prop('checked', rule.enabled !== false);
         $('#rule-show-parents').prop('checked', rule.showParents || false);
         $('#rule-show-taxonomy').prop('checked', rule.showTaxonomy || false);
-        
+
         if (rule.showTaxonomy) {
             $('#taxonomy-selector').show();
             $('#rule-taxonomy').val(rule.taxonomy || 'category');
@@ -229,7 +231,7 @@
 
         $('#segments-container').empty();
         if (rule.segments && rule.segments.length > 0) {
-            rule.segments.forEach(function(segment) {
+            rule.segments.forEach(function (segment) {
                 addSegment(segment);
             });
         }
@@ -240,12 +242,12 @@
     function addSegment(data) {
         const $template = $('#segment-template').contents().clone();
         const segmentId = 'segment-' + (++segmentCounter);
-        
+
         $template.attr('data-segment-id', segmentId);
 
         if (data) {
             $template.find('.segment-type').val(data.type || 'text');
-            
+
             if (data.type === 'text') {
                 $template.find('.segment-text').val(data.value || '');
             } else if (data.type === 'page') {
@@ -263,9 +265,9 @@
 
     function updateSegmentFields($segment) {
         const type = $segment.find('.segment-type').val();
-        
+
         $segment.find('.segment-text, .segment-page, .segment-archive, .segment-taxonomy').hide();
-        
+
         if (type === 'text') {
             $segment.find('.segment-text').show();
         } else if (type === 'page') {
@@ -287,7 +289,7 @@
             segments: []
         };
 
-        $('#segments-container .cb-segment').each(function() {
+        $('#segments-container .cb-segment').each(function () {
             const $segment = $(this);
             const type = $segment.find('.segment-type').val();
             let value = '';
@@ -313,14 +315,19 @@
             rules.push(rule);
         }
 
+        if (!$('#auto-insert').is(':checked')) {
+            $('#auto-insert').prop('checked', true);
+        }
+
         renderRules();
         $('#rule-modal').removeClass('active');
+        saveAllSettings();
     }
 
     function saveAllSettings() {
         const $btn = $('#save-settings');
         const $status = $('.cb-save-status');
-        
+
         $btn.prop('disabled', true);
         $status.text('Enregistrement en cours...').removeClass('success error');
 
@@ -342,19 +349,19 @@
                 nonce: customBreadcrumb.nonce,
                 settings: JSON.stringify(settings)
             },
-            success: function(response) {
+            success: function (response) {
                 if (response.success) {
                     $status.text('✅ Modifications enregistrées !').addClass('success');
                 } else {
                     $status.text('❌ Erreur : ' + (response.data.message || 'Erreur inconnue')).addClass('error');
                 }
                 $btn.prop('disabled', false);
-                
-                setTimeout(function() {
+
+                setTimeout(function () {
                     $status.text('');
                 }, 3000);
             },
-            error: function() {
+            error: function () {
                 $status.text('❌ Erreur de connexion').addClass('error');
                 $btn.prop('disabled', false);
             }

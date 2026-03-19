@@ -5,6 +5,47 @@ Toutes les modifications notables de ce projet seront documentées dans ce fichi
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet adhère au [Versioning Sémantique](https://semver.org/lang/fr/).
 
+## [1.3.0] - 2026-03-19 ✅ VALIDÉ
+
+### Ajouté
+- **Interface WYSIWYG ultra-claire** : approche UX designer
+- Breadcrumb affiché en grand comme sur le site réel
+- Modification directe par clic sur les éléments
+- Modal d'édition simple et rapide
+- Section "Comment l'utiliser" avec shortcode et code PHP très visibles
+- Boutons "Copier" pour shortcode `[custom_breadcrumb]` et code PHP
+- Codes couleur évidents : 🟡 Accueil, 🔵 Éditable, 🟣 Automatique, ⚪ Actuel
+- Badges 🔄 pour éléments automatiques
+- Animation de confirmation après modification
+- Archive `custom-breadcrumb-v3.zip` (8.8 Ko)
+
+### Interface
+- **1 page scrollable** avec 5 sections claires
+- Section 1 : Articles de blog (breadcrumb cliquable)
+- Section 2 : Pages (hiérarchie automatique)
+- Section 3 : Formations/CPT (avec choix taxonomie)
+- Section 4 : Réglages globaux (texte, séparateur, JSON-LD)
+- Section 5 : Comment l'utiliser (3 méthodes avec boutons copier)
+
+### UX
+- Langage simple sans jargon technique
+- Explications concrètes sous chaque breadcrumb
+- Aperçu en temps réel des modifications
+- Interactions intuitives (hover, clic, modal)
+- Feedback visuel immédiat
+
+### Validation
+- ✅ Approuvé par l'utilisateur
+- Interface claire pour clients finaux
+- Shortcode et code PHP facilement accessibles
+- Compréhension immédiate de ce qu'on peut personnaliser
+
+## [1.2.1] - 2026-03-19
+
+### Ajouté
+- Documentation complète du système de versioning
+- Fichier `VERSIONING.md` avec guide d'utilisation des tags
+
 ## [1.2.0] - 2026-03-19
 
 ### Ajouté

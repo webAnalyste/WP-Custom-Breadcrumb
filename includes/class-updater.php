@@ -40,7 +40,7 @@ class Custom_Breadcrumb_Updater
                 'plugin' => $this->plugin_slug,
                 'new_version' => $remote_version,
                 'url' => "https://github.com/{$this->github_repo}",
-                'package' => "https://github.com/{$this->github_repo}/archive/refs/tags/v{$remote_version}.zip",
+                'package' => "https://github.com/{$this->github_repo}/releases/download/v{$remote_version}/custom-breadcrumb-{$remote_version}.zip",
                 'tested' => '6.4',
                 'requires_php' => '7.4',
             ];
@@ -73,7 +73,7 @@ class Custom_Breadcrumb_Updater
             'requires' => '6.4',
             'tested' => '6.4',
             'requires_php' => '7.4',
-            'download_link' => "https://github.com/{$this->github_repo}/archive/refs/tags/v{$remote_version}.zip",
+            'download_link' => "https://github.com/{$this->github_repo}/releases/download/v{$remote_version}/custom-breadcrumb-{$remote_version}.zip",
             'sections' => [
                 'description' => 'Personnalisez vos fils d\'Ariane en quelques clics',
                 'changelog' => $changelog,

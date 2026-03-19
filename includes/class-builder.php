@@ -128,15 +128,16 @@ class Custom_Breadcrumb_Builder
             if ($post) {
                 $taxonomy = $rule['taxonomy'] ?? 'category';
                 $terms = get_the_terms($post->ID, $taxonomy);
-                
+
                 if (!empty($terms) && !is_wp_error($terms)) {
-                    $term = $terms[0];
-                    
-                    // Afficher les parents si demandé
-                    if (!empty($rule['showParents']) && $term->parent) {
+                    // Prendre le terme le plus profond (le plus spécifique)
+                    $term = $this->get_deepest_term($terms);
+
+                    // Toujours afficher les ancêtres pour les taxonomies hiérarchiques
+                    if ($term->parent) {
                         $ancestors = get_ancestors($term->term_id, $taxonomy);
                         $ancestors = array_reverse($ancestors);
-                        
+
                         foreach ($ancestors as $ancestor_id) {
                             $ancestor = get_term($ancestor_id, $taxonomy);
                             if ($ancestor && !is_wp_error($ancestor)) {
@@ -148,7 +149,7 @@ class Custom_Breadcrumb_Builder
                             }
                         }
                     }
-                    
+
                     $this->items[] = [
                         'label' => $term->name,
                         'url' => get_term_link($term),
@@ -188,6 +189,23 @@ class Custom_Breadcrumb_Builder
         } elseif ($this->context->is_taxonomy()) {
             $term = $this->context->get_term();
             if ($term) {
+                // Remonter toute la chaîne d'ancêtres pour les taxonomies hiérarchiques
+                if ($term->parent) {
+                    $ancestors = get_ancestors($term->term_id, $term->taxonomy);
+                    $ancestors = array_reverse($ancestors);
+
+                    foreach ($ancestors as $ancestor_id) {
+                        $ancestor = get_term($ancestor_id, $term->taxonomy);
+                        if ($ancestor && !is_wp_error($ancestor)) {
+                            $this->items[] = [
+                                'label' => $ancestor->name,
+                                'url' => get_term_link($ancestor),
+                                'type' => 'taxonomy',
+                            ];
+                        }
+                    }
+                }
+
                 $this->items[] = [
                     'label' => $term->name,
                     'url' => '',
@@ -256,7 +274,25 @@ class Custom_Breadcrumb_Builder
                     if ($post) {
                         $terms = get_the_terms($post->ID, $value);
                         if (!empty($terms) && !is_wp_error($terms)) {
-                            $term = $terms[0];
+                            // Terme le plus spécifique (le plus profond dans la hiérarchie)
+                            $term = $this->get_deepest_term($terms);
+
+                            // Remonter les ancêtres avant le terme courant
+                            if ($term->parent) {
+                                $ancestors = get_ancestors($term->term_id, $value);
+                                $ancestors = array_reverse($ancestors);
+                                foreach ($ancestors as $ancestor_id) {
+                                    $ancestor = get_term($ancestor_id, $value);
+                                    if ($ancestor && !is_wp_error($ancestor)) {
+                                        $this->items[] = [
+                                            'label' => $ancestor->name,
+                                            'url' => get_term_link($ancestor),
+                                            'type' => 'segment',
+                                        ];
+                                    }
+                                }
+                            }
+
                             $this->items[] = [
                                 'label' => $custom_label ?? $term->name,
                                 'url' => get_term_link($term),
@@ -277,6 +313,30 @@ class Custom_Breadcrumb_Builder
                 }
                 break;
         }
+    }
+
+    /**
+     * Retourne le terme le plus profond dans la hiérarchie parmi une liste de termes.
+     * Évite de prendre un terme parent quand un enfant est disponible.
+     */
+    private function get_deepest_term(array $terms): \WP_Term
+    {
+        if (count($terms) === 1) {
+            return $terms[0];
+        }
+
+        $deepest = $terms[0];
+        $max_depth = count(get_ancestors($terms[0]->term_id, $terms[0]->taxonomy));
+
+        foreach (array_slice($terms, 1) as $term) {
+            $depth = count(get_ancestors($term->term_id, $term->taxonomy));
+            if ($depth > $max_depth) {
+                $max_depth = $depth;
+                $deepest = $term;
+            }
+        }
+
+        return $deepest;
     }
 
     private function add_home(): void

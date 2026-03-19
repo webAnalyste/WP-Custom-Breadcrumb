@@ -1,0 +1,112 @@
+# Changelog
+
+Toutes les modifications notables de ce projet seront documentées dans ce fichier.
+
+Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
+et ce projet adhère au [Versioning Sémantique](https://semver.org/lang/fr/).
+
+## [1.2.0] - 2026-03-19
+
+### Ajouté
+- Documentation comparative entre prototype v1 et v2
+- Fichier CHANGELOG.md pour suivi des versions
+- Tags Git pour versioning sémantique
+
+### Documentation
+- `COMPARAISON-PROTOTYPES.md` : analyse détaillée des deux approches UX
+
+## [1.1.0] - 2026-03-19
+
+### Ajouté
+- **Prototype v2 simplifié** : refonte complète de l'UX
+- Interface en une seule page avec 3 onglets
+- Onglet "Exemples concrets" avec 6 cas d'usage visuels avant/après
+- Onglet "Personnaliser" avec configuration directe par type de contenu
+- Onglet "Réglages" avec options globales simplifiées
+- Aperçu en temps réel du breadcrumb
+- Archive `custom-breadcrumb-v2.zip` (7.6 Ko)
+
+### Modifié
+- Renommage du plugin : "CDC WP Custom Breadcrumbs" → "Custom Breadcrumb"
+- Suppression du concept abstrait de "règles"
+- Langage simplifié sans jargon technique
+
+### Exemples visuels
+- Articles de blog avec catégories
+- Formations avec parcours
+- Pages hiérarchiques
+- Agences locales avec région/ville
+- Produits WooCommerce avec catégories
+- Archives de taxonomies
+
+## [1.0.0] - 2026-03-19
+
+### Ajouté
+- **Prototype UX complet** (version 1)
+- Interface admin sur 5 pages distinctes
+- Tableau de bord avec statistiques
+- Gestion des règles avec filtres et recherche
+- Formulaire de création de règle avec builder
+- Page de réglages globaux
+- Système de backups et exports
+- CSS moderne et responsive
+- JavaScript interactif
+- Archive `cdc-breadcrumbs-prototype.zip` (15 Ko)
+- Documentation `GUIDE-TEST-PROTOTYPE.md`
+
+### Documentation
+- Guide d'installation et test du prototype
+- README prototype avec instructions détaillées
+
+## [0.2.0] - 2026-03-19
+
+### Ajouté
+- **Scaffold du plugin WordPress fonctionnel**
+- Fichier principal `cdc-wp-custom-breadcrumbs.php`
+- Architecture MVC (includes, admin, public)
+- Classe `CDC_WP_Custom_Breadcrumbs_Plugin` (singleton)
+- Classe `CDC_WP_Custom_Breadcrumbs_Admin` (interface admin)
+- Classe `CDC_WP_Custom_Breadcrumbs_Public` (rendu frontend)
+- Rendu HTML du breadcrumb avec navigation sémantique
+- Génération JSON-LD BreadcrumbList pour SEO
+- Support des contextes : posts, pages, CPT, taxonomies, archives, auteurs, recherche, 404
+- Shortcode `[cdc_breadcrumbs]`
+- Fonction PHP `cdc_wp_custom_breadcrumbs()`
+- Page de réglages dans l'admin WordPress
+- Fichier `uninstall.php` pour désinstallation propre
+- README.md avec liens vers webAnalyste et Formations Analytics
+
+### Sécurité
+- Protection ABSPATH sur tous les fichiers
+- Vérification `manage_options` pour l'admin
+- Sanitation des entrées utilisateur
+- Échappement des sorties HTML
+
+## [0.1.0] - 2026-03-19
+
+### Ajouté
+- Initialisation du dépôt Git
+- Configuration du remote GitHub
+- Cahier des charges complet (894 lignes)
+- Commit initial de sauvegarde
+
+### Infrastructure
+- Dépôt Git local initialisé
+- Remote configuré : https://github.com/webAnalyste/WP-Custom-Breadcrumb
+- Branche principale : `main`
+
+---
+
+## Légende des types de changements
+
+- **Ajouté** : nouvelles fonctionnalités
+- **Modifié** : changements dans des fonctionnalités existantes
+- **Déprécié** : fonctionnalités bientôt supprimées
+- **Supprimé** : fonctionnalités supprimées
+- **Corrigé** : corrections de bugs
+- **Sécurité** : corrections de vulnérabilités
+
+---
+
+**Plugin développé par [webAnalyste](https://www.webanalyste.com)** - Agence experte en data, IA et automatisation no-code  
+**Formation : [Formations Analytics](https://www.formations-analytics.com)**

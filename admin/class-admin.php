@@ -41,14 +41,14 @@ class Custom_Breadcrumb_Admin
 
         wp_enqueue_style(
             'custom-breadcrumb-admin',
-            CUSTOM_BREADCRUMB_URL . 'admin/assets/style.css',
+            CUSTOM_BREADCRUMB_URL . 'admin/assets/style-advanced.css',
             [],
             CUSTOM_BREADCRUMB_VERSION
         );
 
         wp_enqueue_script(
             'custom-breadcrumb-admin',
-            CUSTOM_BREADCRUMB_URL . 'admin/assets/script.js',
+            CUSTOM_BREADCRUMB_URL . 'admin/assets/script-advanced.js',
             ['jquery'],
             CUSTOM_BREADCRUMB_VERSION,
             true
@@ -94,6 +94,6 @@ class Custom_Breadcrumb_Admin
 
         $settings = $this->config->get_settings();
         
-        require_once CUSTOM_BREADCRUMB_PATH . 'admin/views/page.php';
+        require_once CUSTOM_BREADCRUMB_PATH . 'admin/views/page-advanced.php';
     }
 }

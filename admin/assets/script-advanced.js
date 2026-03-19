@@ -324,10 +324,6 @@
             rules.push(rule);
         }
 
-        if (!$('#auto-insert').is(':checked')) {
-            $('#auto-insert').prop('checked', true);
-        }
-
         renderRules();
         $('#rule-modal').removeClass('active');
         saveAllSettings();
@@ -346,7 +342,8 @@
                 home_label: $('#home-label').val(),
                 separator: $('#separator').val(),
                 enable_jsonld: $('#enable-jsonld').is(':checked'),
-                auto_insert: $('#auto-insert').is(':checked')
+                insert_position: $('#insert-position').val(),
+                alignment: $('#alignment').val()
             }
         };
 

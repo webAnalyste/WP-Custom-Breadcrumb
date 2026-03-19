@@ -71,13 +71,39 @@ $pages = get_pages(['number' => 100]);
                 </tr>
 
                 <tr>
-                    <th>Insertion automatique</th>
+                    <th>Position d'insertion</th>
                     <td>
-                        <label>
-                            <input type="checkbox" id="auto-insert" <?php checked($settings['global']['auto_insert'] ?? false); ?>>
-                            Insérer automatiquement le breadcrumb avant le contenu
-                        </label>
-                        <p class="description">Le breadcrumb sera ajouté automatiquement en haut de chaque page</p>
+                        <select id="insert-position">
+                            <option value="disabled" <?php selected($settings['global']['insert_position'] ?? 'disabled', 'disabled'); ?>>
+                                Désactivé — manuel (shortcode / PHP)
+                            </option>
+                            <option value="before_article" <?php selected($settings['global']['insert_position'] ?? 'disabled', 'before_article'); ?>>
+                                Avant le titre — tout en haut de l'article
+                            </option>
+                            <option value="before_content" <?php selected($settings['global']['insert_position'] ?? 'disabled', 'before_content'); ?>>
+                                Après le titre — avant le contenu
+                            </option>
+                            <option value="after_content" <?php selected($settings['global']['insert_position'] ?? 'disabled', 'after_content'); ?>>
+                                Après le contenu
+                            </option>
+                        </select>
+                        <p class="description">
+                            <em>Avant le titre</em> utilise le hook <code>loop_start</code> (compatible la plupart des thèmes).<br>
+                            <em>Avant/Après le contenu</em> utilise le filtre <code>the_content</code>.<br>
+                            Pour un positionnement précis, utilisez le shortcode <code>[custom_breadcrumb]</code> ou <code>&lt;?php custom_breadcrumb(); ?&gt;</code>.
+                        </p>
+                    </td>
+                </tr>
+
+                <tr>
+                    <th>Alignement</th>
+                    <td>
+                        <select id="alignment">
+                            <option value="left" <?php selected($settings['global']['alignment'] ?? 'left', 'left'); ?>>⬅ Gauche</option>
+                            <option value="center" <?php selected($settings['global']['alignment'] ?? 'left', 'center'); ?>>↔ Centre</option>
+                            <option value="right" <?php selected($settings['global']['alignment'] ?? 'left', 'right'); ?>>➡ Droite</option>
+                        </select>
+                        <p class="description">Alignement horizontal du fil d'Ariane</p>
                     </td>
                 </tr>
             </table>

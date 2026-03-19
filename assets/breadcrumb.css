@@ -44,6 +44,18 @@
     user-select: none;
 }
 
+.custom-breadcrumb--left .custom-breadcrumb__list {
+    justify-content: flex-start;
+}
+
+.custom-breadcrumb--center .custom-breadcrumb__list {
+    justify-content: center;
+}
+
+.custom-breadcrumb--right .custom-breadcrumb__list {
+    justify-content: flex-end;
+}
+
 @media (max-width: 768px) {
     .custom-breadcrumb {
         margin: 15px 0;

@@ -3,7 +3,7 @@
  * Plugin Name: Custom Breadcrumb
  * Plugin URI: https://github.com/webAnalyste/WP-Custom-Breadcrumb
  * Description: Personnalisez vos fils d'Ariane en quelques clics
- * Version: 2.1.3
+ * Version: 2.1.4
  * Requires at least: 6.4
  * Requires PHP: 7.4
  * Author: webAnalyste
@@ -19,7 +19,7 @@ if (! defined('ABSPATH')) {
     exit;
 }
 
-define('CUSTOM_BREADCRUMB_VERSION', '2.1.3');
+define('CUSTOM_BREADCRUMB_VERSION', '2.1.4');
 define('CUSTOM_BREADCRUMB_FILE', __FILE__);
 define('CUSTOM_BREADCRUMB_PATH', plugin_dir_path(__FILE__));
 define('CUSTOM_BREADCRUMB_URL', plugin_dir_url(__FILE__));
@@ -62,8 +62,7 @@ class Custom_Breadcrumb
         }
 
         add_action('init', [$this, 'register_shortcode']);
-        add_filter('the_content', [$this, 'maybe_auto_insert'], 10);
-        add_action('wp_body_open', [$this, 'maybe_render_body_open_breadcrumb']);
+        add_action('wp', [$this, 'register_position_hooks']);
     }
 
     public function register_shortcode(): void
@@ -71,39 +70,50 @@ class Custom_Breadcrumb
         add_shortcode('custom_breadcrumb', [$this->renderer, 'render']);
     }
 
-    public function maybe_auto_insert(string $content): string
+    public function register_position_hooks(): void
     {
-        if (is_admin() || !is_singular() || !in_the_loop() || !is_main_query()) {
+        $settings = $this->config->get_global_settings();
+        $position = $settings['insert_position'] ?? 'disabled';
+
+        if ($position === 'disabled') {
+            return;
+        }
+
+        if ($position === 'before_article') {
+            add_action('loop_start', [$this, 'render_before_article'], 10);
+        } else {
+            add_filter('the_content', [$this, 'inject_into_content'], 10);
+        }
+    }
+
+    public function render_before_article(\WP_Query $query): void
+    {
+        static $rendered = false;
+
+        if ($rendered || is_admin() || !$query->is_main_query() || is_front_page()) {
+            return;
+        }
+
+        $rendered = true;
+        echo $this->renderer->render();
+    }
+
+    public function inject_into_content(string $content): string
+    {
+        if (is_admin() || !in_the_loop() || !is_main_query()) {
             return $content;
         }
 
         $settings = $this->config->get_global_settings();
-        
-        if (!empty($settings['auto_insert'])) {
-            $breadcrumb = $this->renderer->render();
-            return $breadcrumb . $content;
+        $position = $settings['insert_position'] ?? 'before_content';
+        $breadcrumb = $this->renderer->render();
+
+        if ($position === 'after_content') {
+            return $content . $breadcrumb;
         }
 
-        return $content;
-    }
-
-    public function maybe_render_body_open_breadcrumb(): void
-    {
-        if (is_admin() || is_singular() || is_front_page()) {
-            return;
-        }
-
-        if (!is_home() && !is_archive() && !is_search()) {
-            return;
-        }
-
-        $settings = $this->config->get_global_settings();
-
-        if (empty($settings['auto_insert'])) {
-            return;
-        }
-
-        echo $this->renderer->render();
+        // before_content (default)
+        return $breadcrumb . $content;
     }
 
     public function get_renderer(): Custom_Breadcrumb_Renderer

@@ -44,7 +44,8 @@ class Custom_Breadcrumb_Config
                 'home_label' => 'Accueil',
                 'separator' => '/',
                 'enable_jsonld' => true,
-                'auto_insert' => false,
+                'insert_position' => 'disabled',
+                'alignment' => 'left',
             ],
         ];
     }

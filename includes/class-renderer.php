@@ -54,7 +54,8 @@ class Custom_Breadcrumb_Renderer
         $settings = $this->config->get_global_settings();
         $separator = esc_html($settings['separator'] ?? '/');
 
-        $html = '<nav class="custom-breadcrumb" aria-label="Fil d\'Ariane">';
+        $alignment = $settings['alignment'] ?? 'left';
+        $html = '<nav class="custom-breadcrumb custom-breadcrumb--' . esc_attr($alignment) . '" aria-label="Fil d\'Ariane">';
         $html .= '<ol class="custom-breadcrumb__list">';
 
         $total = count($items);

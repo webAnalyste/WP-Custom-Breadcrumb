@@ -247,13 +247,30 @@ class Custom_Breadcrumb_Builder
                 break;
 
             case 'taxonomy':
-                $tax_obj = get_taxonomy($value);
-                if ($tax_obj) {
-                    $this->items[] = [
-                        'label' => $custom_label ?? $tax_obj->labels->singular_name,
-                        'url' => '',
-                        'type' => 'segment',
-                    ];
+                // Contexte singulier : afficher le vrai terme du post courant
+                if ($this->context->is_singular()) {
+                    $post = $this->context->get_post();
+                    if ($post) {
+                        $terms = get_the_terms($post->ID, $value);
+                        if (!empty($terms) && !is_wp_error($terms)) {
+                            $term = $terms[0];
+                            $this->items[] = [
+                                'label' => $custom_label ?? $term->name,
+                                'url' => get_term_link($term),
+                                'type' => 'segment',
+                            ];
+                        }
+                    }
+                } else {
+                    // Contexte archive : nom de la taxonomie en fallback
+                    $tax_obj = get_taxonomy($value);
+                    if ($tax_obj) {
+                        $this->items[] = [
+                            'label' => $custom_label ?? $tax_obj->labels->singular_name,
+                            'url' => '',
+                            'type' => 'segment',
+                        ];
+                    }
                 }
                 break;
         }

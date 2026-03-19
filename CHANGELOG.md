@@ -5,6 +5,11 @@ Toutes les modifications notables de ce projet seront documentées dans ce fichi
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet adhère au [Versioning Sémantique](https://semver.org/lang/fr/).
 
+## [2.1.1] - 2026-03-19
+
+### Ajouté
+- Correction: les règles configurées s'appliquent maintenant sur le site
+
 ## [2.1.0] - 2026-03-19
 
 ### Ajouté

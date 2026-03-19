@@ -10,6 +10,9 @@
  * Author URI: https://www.webanalyste.com
  * Text Domain: custom-breadcrumb
  * License: GPL v2 or later
+ * GitHub Plugin URI: webAnalyste/WP-Custom-Breadcrumb
+ * GitHub Branch: main
+ * Update URI: https://github.com/webAnalyste/WP-Custom-Breadcrumb
  */
 
 if (! defined('ABSPATH')) {
@@ -25,7 +28,14 @@ require_once CUSTOM_BREADCRUMB_PATH . 'includes/class-config.php';
 require_once CUSTOM_BREADCRUMB_PATH . 'includes/class-context.php';
 require_once CUSTOM_BREADCRUMB_PATH . 'includes/class-builder.php';
 require_once CUSTOM_BREADCRUMB_PATH . 'includes/class-renderer.php';
+require_once CUSTOM_BREADCRUMB_PATH . 'includes/class-updater.php';
 require_once CUSTOM_BREADCRUMB_PATH . 'admin/class-admin.php';
+
+new Custom_Breadcrumb_Updater(
+    CUSTOM_BREADCRUMB_FILE,
+    'webAnalyste/WP-Custom-Breadcrumb',
+    CUSTOM_BREADCRUMB_VERSION
+);
 
 class Custom_Breadcrumb
 {

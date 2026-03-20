@@ -75,7 +75,7 @@ class Custom_Breadcrumb_Updater
             'requires_php' => '7.4',
             'download_link' => "https://github.com/{$this->github_repo}/releases/download/v{$remote_version}/custom-breadcrumb-{$remote_version}.zip",
             'sections' => [
-                'description' => 'Personnalisez vos fils d\'Ariane en quelques clics',
+                'description' => $this->get_readme(),
                 'changelog' => $changelog,
             ],
         ];
@@ -121,6 +121,45 @@ class Custom_Breadcrumb_Updater
         }
 
         return null;
+    }
+
+    private function get_readme(): string
+    {
+        $response = wp_remote_get(
+            "https://raw.githubusercontent.com/{$this->github_repo}/main/README.md",
+            ['timeout' => 10]
+        );
+
+        if (is_wp_error($response)) {
+            return 'Voir la documentation sur <a href="https://github.com/' . esc_attr($this->github_repo) . '" target="_blank">GitHub</a>.';
+        }
+
+        return $this->markdown_to_html(wp_remote_retrieve_body($response));
+    }
+
+    private function markdown_to_html(string $md): string
+    {
+        // Titres
+        $md = preg_replace('/^### (.+)$/m', '<h4>$1</h4>', $md);
+        $md = preg_replace('/^## (.+)$/m', '<h3>$1</h3>', $md);
+        $md = preg_replace('/^# (.+)$/m', '<h2>$1</h2>', $md);
+        // Gras
+        $md = preg_replace('/\*\*(.+?)\*\*/', '<strong>$1</strong>', $md);
+        // Italique
+        $md = preg_replace('/\*(.+?)\*/', '<em>$1</em>', $md);
+        // Code inline
+        $md = preg_replace('/`([^`\n]+)`/', '<code>$1</code>', $md);
+        // Blocs code
+        $md = preg_replace('/```[\w]*\n(.*?)```/s', '<pre><code>$1</code></pre>', $md);
+        // Liens
+        $md = preg_replace('/\[([^\]]+)\]\(([^)]+)\)/', '<a href="$2" target="_blank">$1</a>', $md);
+        // Listes
+        $md = preg_replace('/^- (.+)$/m', '<li>$1</li>', $md);
+        $md = preg_replace('/(<li>.*<\/li>)/s', '<ul>$1</ul>', $md);
+        // Paragraphes (doubles sauts de ligne)
+        $md = preg_replace('/\n{2,}/', '</p><p>', $md);
+
+        return '<p>' . trim($md) . '</p>';
     }
 
     private function get_changelog(): string

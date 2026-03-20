@@ -1,64 +1,82 @@
-# CDC WP Custom Breadcrumbs
+# Custom Breadcrumb
 
-CDC WP Custom Breadcrumbs est un plugin WordPress conçu pour générer des fils d’Ariane personnalisés, cohérents et SEO-friendly selon le contexte éditorial du site.
+Plugin WordPress pour générer des fils d'Ariane personnalisés, SEO-friendly et cohérents selon le contexte éditorial du site.
 
-Il s’inscrit dans une démarche d’optimisation de la navigation, du maillage interne et de la performance digitale, portée par [webAnalyste, agence experte en data, IA et automatisation no-code](https://www.webanalyste.com).
+Développé par [webAnalyste, agence experte en data, IA et automatisation](https://www.webanalyste.com).
 
-## Fonctionnalités actuelles
+## Fonctionnalités
 
-- rendu HTML de breadcrumb compatible avec les thèmes WordPress
-- injection optionnelle des données structurées `BreadcrumbList` en JSON-LD
-- shortcode `[cdc_breadcrumbs]`
-- fonction PHP `cdc_wp_custom_breadcrumbs()`
-- page de réglages dans l’administration WordPress
-- gestion des contextes principaux : accueil, blog, pages, articles, archives, taxonomies, auteurs, recherche et 404
-- désinstallation propre avec suppression de l’option du plugin
+- **Règles personnalisées** par type de contenu (articles, pages, CPT, archives, taxonomies)
+- **Segments libres** : texte libre, lien vers une page, archive de CPT, ou taxonomie réelle du post
+- **Mode d'insertion par règle** : automatique (position globale) ou shortcode uniquement
+- Rendu HTML sémantique `<nav>` + `<ol>` + attributs `aria`
+- Données structurées **JSON-LD BreadcrumbList** pour le SEO
+- Alignement horizontal : gauche, centre, droite
+- Position d'insertion : avant l'article, avant le contenu, après le contenu
+- Mise à jour automatique depuis GitHub
+- Désinstallation propre
 
 ## Installation
 
-1. Copier le dossier du plugin dans `wp-content/plugins/`
-2. Activer `CDC WP Custom Breadcrumbs` depuis l’admin WordPress
-3. Aller dans `Réglages > CDC Breadcrumbs`
-4. Configurer le libellé racine, le séparateur, le JSON-LD et l’insertion automatique
+1. Télécharger la dernière release depuis [GitHub Releases](https://github.com/webAnalyste/WP-Custom-Breadcrumb/releases)
+2. Copier le dossier dans `wp-content/plugins/`
+3. Activer **Custom Breadcrumb** depuis l'admin WordPress
+4. Aller dans **Breadcrumb** dans le menu admin
+5. Créer vos règles et configurer les réglages globaux
 
 ## Utilisation
 
 ### Shortcode
 
-Utilisez le shortcode suivant dans vos contenus ou templates compatibles :
-
-```text
-[cdc_breadcrumbs]
+```
+[custom_breadcrumb]
 ```
 
-### Fonction PHP
-
-Utilisez la fonction suivante dans votre thème :
+### Fonction PHP (dans le thème)
 
 ```php
-<?php cdc_wp_custom_breadcrumbs(); ?>
+<?php custom_breadcrumb(); ?>
 ```
 
-## Architecture du plugin
+### Récupérer le HTML sans l'afficher
 
-- `cdc-wp-custom-breadcrumbs.php` : bootstrap principal du plugin
-- `includes/` : cœur du plugin et gestion des réglages
-- `admin/` : page d’administration et sanitation des options
-- `public/` : rendu frontend HTML et JSON-LD
-- `uninstall.php` : nettoyage des options à la suppression
+```php
+$html = custom_breadcrumb_get();
+```
 
-## Feuille de route
+## Règles de breadcrumb
 
-- moteur de règles métier avancé par type de contenu, taxonomie et métadonnées
-- priorisation de taxonomies et parents forcés
-- interface de gestion des règles
-- sauvegarde, export et restauration des configurations
-- hooks d’extension pour intégrateurs et développeurs
+Chaque règle définit :
+- **Type de contenu** : article, page, archive catégorie, archive étiquette, CPT…
+- **Segments** : éléments entre Accueil et la page actuelle (texte, page, archive, taxonomie)
+- **Mode d'insertion** :
+  - *Automatique* — inséré à la position globale choisie
+  - *Shortcode uniquement* — rendu uniquement via `[custom_breadcrumb]`
+- **Afficher la taxonomie** : insère le terme (et ses ancêtres) avant la page actuelle
+- **Afficher les parents** : insère la hiérarchie de pages parentes
 
-Pour accompagner les équipes sur la montée en compétence autour de la data, de l’analytics, de l’IA et de l’automatisation, nous pouvons aussi nous appuyer sur [Formations Analytics, notre organisme de formation spécialisé](https://www.formations-analytics.com).
+## Architecture
 
-## Dépôt Git distant
+```
+custom-breadcrumb.php          ← entrée plugin
+includes/
+  class-config.php             ← gestion des réglages (wp_options)
+  class-context.php            ← détection du contexte WP courant
+  class-builder.php            ← construction des items du breadcrumb
+  class-renderer.php           ← rendu HTML et JSON-LD
+  class-updater.php            ← mises à jour automatiques depuis GitHub
+admin/
+  class-admin.php              ← menu, AJAX, liens plugins
+  views/page-advanced.php      ← interface d'administration
+  assets/script-advanced.js    ← JS admin
+  assets/style-advanced.css    ← CSS admin
+assets/
+  breadcrumb.css               ← styles frontend
+uninstall.php                  ← nettoyage à la désinstallation
+```
 
-```text
+## Dépôt
+
+```
 https://github.com/webAnalyste/WP-Custom-Breadcrumb
 ```

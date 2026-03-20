@@ -18,6 +18,8 @@ class Custom_Breadcrumb_Admin
         add_action('admin_menu', [$this, 'register_menu']);
         add_action('admin_enqueue_scripts', [$this, 'enqueue_assets']);
         add_action('wp_ajax_custom_breadcrumb_save', [$this, 'ajax_save']);
+        add_filter('plugin_row_meta', [$this, 'plugin_row_meta'], 10, 2);
+        add_filter('plugin_action_links_' . plugin_basename(CUSTOM_BREADCRUMB_FILE), [$this, 'plugin_action_links']);
     }
 
     public function register_menu(): void
@@ -84,6 +86,26 @@ class Custom_Breadcrumb_Admin
         } else {
             wp_send_json_error(['message' => 'Erreur lors de l\'enregistrement']);
         }
+    }
+
+    public function plugin_action_links(array $links): array
+    {
+        $settings_link = '<a href="' . esc_url(admin_url('admin.php?page=custom-breadcrumb')) . '">' . __('Réglages') . '</a>';
+        array_unshift($links, $settings_link);
+        return $links;
+    }
+
+    public function plugin_row_meta(array $links, string $file): array
+    {
+        if (plugin_basename(CUSTOM_BREADCRUMB_FILE) !== $file) {
+            return $links;
+        }
+
+        $links[] = '<a href="https://github.com/webAnalyste/WP-Custom-Breadcrumb" target="_blank">GitHub</a>';
+        $links[] = '<a href="https://github.com/webAnalyste/WP-Custom-Breadcrumb/blob/main/README.md" target="_blank">Documentation</a>';
+        $links[] = '<a href="https://github.com/webAnalyste/WP-Custom-Breadcrumb/blob/main/CHANGELOG.md" target="_blank">Changelog</a>';
+
+        return $links;
     }
 
     public function render_page(): void

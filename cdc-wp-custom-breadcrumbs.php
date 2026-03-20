@@ -1,14 +1,7 @@
 <?php
 /**
- * Plugin Name: CDC WP Custom Breadcrumbs
- * Plugin URI: https://github.com/webAnalyste/WP-Custom-Breadcrumb
- * Description: Breadcrumbs WordPress personnalisés avec rendu HTML, JSON-LD, shortcode et page d'administration.
- * Version: 0.1.0
- * Requires at least: 6.4
- * Requires PHP: 7.4
- * Author: webAnalyste
- * Author URI: https://www.webanalyste.com
- * Text Domain: cdc-wp-custom-breadcrumbs
+ * Ancien fichier prototype — conservé pour référence uniquement.
+ * Ne pas activer : utiliser custom-breadcrumb.php
  */
 
 if (! defined('ABSPATH')) {

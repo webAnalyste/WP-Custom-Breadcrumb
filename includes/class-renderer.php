@@ -56,6 +56,7 @@ class Custom_Breadcrumb_Renderer
 
         $alignment = $settings['alignment'] ?? 'left';
         $html = '<nav class="custom-breadcrumb custom-breadcrumb--' . esc_attr($alignment) . '" aria-label="Fil d\'Ariane">';
+        $html .= '<div class="custom-breadcrumb__inner">';
         $html .= '<ol class="custom-breadcrumb__list">';
 
         $total = count($items);
@@ -86,6 +87,7 @@ class Custom_Breadcrumb_Renderer
         }
 
         $html .= '</ol>';
+        $html .= '</div>';
         $html .= '</nav>';
 
         return $html;

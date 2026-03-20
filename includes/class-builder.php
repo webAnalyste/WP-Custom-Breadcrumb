@@ -19,14 +19,14 @@ class Custom_Breadcrumb_Builder
         $this->context = $context;
     }
 
-    public function build(): array
+    public function build(string $mode = 'auto'): array
     {
         $this->items = [];
 
         $settings = $this->config->get_settings();
         $has_rules = !empty($settings['rules']);
 
-        $rule = $this->find_applicable_rule();
+        $rule = $this->find_applicable_rule($mode);
 
         if ($rule) {
             // Règle correspondante trouvée : l'appliquer
@@ -61,10 +61,10 @@ class Custom_Breadcrumb_Builder
         return apply_filters('custom_breadcrumb_items', $this->items, $this->context);
     }
 
-    private function find_applicable_rule(): ?array
+    private function find_applicable_rule(string $mode = 'auto'): ?array
     {
         $settings = $this->config->get_settings();
-        
+
         if (empty($settings['rules'])) {
             return null;
         }
@@ -74,6 +74,11 @@ class Custom_Breadcrumb_Builder
 
         foreach ($settings['rules'] as $rule) {
             if (empty($rule['enabled'])) {
+                continue;
+            }
+
+            // En mode auto, ignorer les règles réservées au shortcode
+            if ($mode === 'auto' && ($rule['insertMode'] ?? 'auto') === 'shortcode_only') {
                 continue;
             }
 

@@ -246,6 +246,21 @@ $pages = get_pages(['number' => 100]);
                             <strong>Règle activée</strong>
                         </label>
                     </div>
+
+                    <div class="cb-field">
+                        <strong>Mode d'insertion</strong>
+                        <div class="cb-insert-mode">
+                            <label>
+                                <input type="radio" name="rule-insert-mode" value="auto" checked>
+                                Automatique <span class="description">(suit la position globale)</span>
+                            </label>
+                            <label>
+                                <input type="radio" name="rule-insert-mode" value="shortcode_only">
+                                Shortcode uniquement — <code>[custom_breadcrumb]</code>
+                                <span class="description">(ignoré par l'auto-insert)</span>
+                            </label>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- SECTION 2 : STRUCTURE DU BREADCRUMB -->

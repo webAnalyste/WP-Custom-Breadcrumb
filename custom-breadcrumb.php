@@ -3,7 +3,7 @@
  * Plugin Name: Custom Breadcrumb
  * Plugin URI: https://github.com/webAnalyste/WP-Custom-Breadcrumb
  * Description: Personnalisez vos fils d'Ariane en quelques clics
- * Version: 2.1.10
+ * Version: 2.1.11
  * Requires at least: 6.4
  * Requires PHP: 7.4
  * Author: webAnalyste
@@ -19,7 +19,7 @@ if (! defined('ABSPATH')) {
     exit;
 }
 
-define('CUSTOM_BREADCRUMB_VERSION', '2.1.10');
+define('CUSTOM_BREADCRUMB_VERSION', '2.1.11');
 define('CUSTOM_BREADCRUMB_FILE', __FILE__);
 define('CUSTOM_BREADCRUMB_PATH', plugin_dir_path(__FILE__));
 define('CUSTOM_BREADCRUMB_URL', plugin_dir_url(__FILE__));
@@ -67,7 +67,9 @@ class Custom_Breadcrumb
 
     public function register_shortcode(): void
     {
-        add_shortcode('custom_breadcrumb', [$this->renderer, 'render']);
+        add_shortcode('custom_breadcrumb', function(array $atts = []) {
+            return $this->renderer->render($atts, 'shortcode');
+        });
     }
 
     public function register_position_hooks(): void
@@ -124,12 +126,12 @@ class Custom_Breadcrumb
 
 function custom_breadcrumb(): void
 {
-    echo Custom_Breadcrumb::instance()->get_renderer()->render();
+    echo Custom_Breadcrumb::instance()->get_renderer()->render([], 'shortcode');
 }
 
 function custom_breadcrumb_get(): string
 {
-    return Custom_Breadcrumb::instance()->get_renderer()->render();
+    return Custom_Breadcrumb::instance()->get_renderer()->render([], 'shortcode');
 }
 
 register_activation_hook(__FILE__, function() {

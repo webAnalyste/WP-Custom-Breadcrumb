@@ -29,16 +29,16 @@ class Custom_Breadcrumb_Renderer
         );
     }
 
-    public function render(array $atts = []): string
+    public function render(array $atts = [], string $mode = 'auto'): string
     {
         $context = new Custom_Breadcrumb_Context();
-        
+
         if ($context->get_type() === 'front_page') {
             return '';
         }
 
         $builder = new Custom_Breadcrumb_Builder($this->config, $context);
-        $items = $builder->build();
+        $items = $builder->build($mode);
 
         if (empty($items)) {
             return '';

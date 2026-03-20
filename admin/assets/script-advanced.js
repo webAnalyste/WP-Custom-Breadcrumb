@@ -172,7 +172,11 @@
             'category': 'Archives catégories',
             'tag': 'Archives étiquettes'
         };
-        return typeLabels[postType] || postType;
+        const label = typeLabels[postType] || postType;
+        const badge = (rule.insertMode === 'shortcode_only')
+            ? ' <span class="cb-badge-shortcode">[shortcode]</span>'
+            : '';
+        return label + badge;
     }
 
     function getRulePreview(rule) {
@@ -208,6 +212,7 @@
     function resetRuleForm() {
         $('#rule-post-type').val('post');
         $('#rule-enabled').prop('checked', true);
+        $('input[name="rule-insert-mode"][value="auto"]').prop('checked', true);
         $('#rule-show-parents').prop('checked', false);
         $('#rule-show-taxonomy').prop('checked', false);
         $('#taxonomy-selector').hide();
@@ -222,6 +227,7 @@
         $('#modal-title').text('Modifier la règle');
         $('#rule-post-type').val(rule.postType || 'post');
         $('#rule-enabled').prop('checked', rule.enabled !== false);
+        $('input[name="rule-insert-mode"][value="' + (rule.insertMode || 'auto') + '"]').prop('checked', true);
         $('#rule-show-parents').prop('checked', rule.showParents || false);
         $('#rule-show-taxonomy').prop('checked', rule.showTaxonomy || false);
 
@@ -287,6 +293,7 @@
         const rule = {
             postType: $('#rule-post-type').val(),
             enabled: $('#rule-enabled').is(':checked'),
+            insertMode: $('input[name="rule-insert-mode"]:checked').val() || 'auto',
             showParents: $('#rule-show-parents').is(':checked'),
             showTaxonomy: $('#rule-show-taxonomy').is(':checked'),
             taxonomy: $('#rule-taxonomy').val(),

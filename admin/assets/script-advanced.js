@@ -9,6 +9,10 @@
     let currentRuleId = null;
     let segmentCounter = 0;
 
+    function esc(str) {
+        return $('<span>').text(str).html();
+    }
+
     $(document).ready(function () {
 
         // Charger les règles existantes
@@ -172,7 +176,7 @@
             'category': 'Archives catégories',
             'tag': 'Archives étiquettes'
         };
-        const label = typeLabels[postType] || postType;
+        const label = typeLabels[postType] || esc(postType);
         const badge = (rule.insertMode === 'shortcode_only')
             ? ' <span class="cb-badge-shortcode">[shortcode]</span>'
             : '';
@@ -185,15 +189,15 @@
         if (rule.segments && rule.segments.length > 0) {
             rule.segments.forEach(function (segment) {
                 preview += ' / ';
-                const customLabel = segment.label ? `<em>${segment.label}</em>` : null;
+                const customLabel = segment.label ? `<em>${esc(segment.label)}</em>` : null;
                 if (segment.type === 'text') {
-                    preview += customLabel || segment.value;
+                    preview += customLabel || esc(segment.value);
                 } else if (segment.type === 'page') {
-                    preview += customLabel || `📄 Page #${segment.value}`;
+                    preview += customLabel || `📄 Page #${esc(segment.value)}`;
                 } else if (segment.type === 'archive') {
-                    preview += customLabel || `📚 ${segment.value}`;
+                    preview += customLabel || `📚 ${esc(segment.value)}`;
                 } else if (segment.type === 'taxonomy') {
-                    preview += customLabel || `🏷️ ${segment.value}`;
+                    preview += customLabel || `🏷️ ${esc(segment.value)}`;
                 } else {
                     preview += customLabel || '🔧 Personnalisé';
                 }
@@ -201,7 +205,7 @@
         }
 
         if (rule.showTaxonomy) {
-            preview += ` / 🏷️ ${rule.taxonomy || 'Taxonomie'}`;
+            preview += ` / 🏷️ ${esc(rule.taxonomy || 'Taxonomie')}`;
         }
 
         preview += ' / Page actuelle';

@@ -85,6 +85,10 @@ class Custom_Breadcrumb_Updater
 
     public function after_install($response, $hook_extra, $result)
     {
+        if (!isset($hook_extra['plugin']) || $hook_extra['plugin'] !== $this->plugin_slug) {
+            return $result;
+        }
+
         global $wp_filesystem;
 
         $install_directory = plugin_dir_path($this->plugin_file);

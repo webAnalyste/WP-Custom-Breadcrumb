@@ -5,6 +5,11 @@ Toutes les modifications notables de ce projet seront documentées dans ce fichi
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet adhère au [Versioning Sémantique](https://semver.org/lang/fr/).
 
+## [2.1.22] - 2026-04-10
+
+### Ajouté
+- fix: option ancestors — guillemet parasite empêchait la sélection à la restauration
+
 ## [2.1.21] - 2026-04-10
 
 ### Ajouté

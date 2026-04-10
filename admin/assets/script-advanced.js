@@ -76,7 +76,11 @@
                     <span class="dyn-source-depth-wrap"${srcHier ? '' : ' style="display:none"'}>
                         niv.&nbsp;<input type="number" class="dyn-source-depth small-text" min="0" max="20" placeholder="auto" value="${esc(String(srcDepth))}">
                     </span>
-                    <span class="dyn-cond-label">= CPT cible dans</span>
+                    <select class="dyn-match-mode">
+                        <option value="exact"${(data.match_mode || 'exact') === 'exact' ? ' selected' : ''}>= terme identique</option>
+                        <option value="ancestors"${data.match_mode === 'ancestors' ? ' selected' : ''}">= terme ancêtre du post courant</option>
+                    </select>
+                    <span class="dyn-cond-label">CPT cible dans</span>
                     <select class="dyn-target-tax">${buildTaxonomyOptions(data.target_tax || '')}</select>
                 </span>
 
@@ -325,7 +329,8 @@
                             return `niv(${esc(c.taxonomy || '?')})${esc(c.operator || '=')}niv_cible`;
                         }
                         const depth = c.source_depth !== undefined ? `[niv.${c.source_depth}]` : '';
-                        return `${esc(c.source_tax || '?')}${depth}→${esc(c.target_tax || '?')}`;
+                        const mode  = c.match_mode === 'ancestors' ? '⊃' : '=';
+                        return `${esc(c.source_tax || '?')}${depth}${mode}${esc(c.target_tax || '?')}`;
                     }).join(', ');
                     preview += customLabel || `🔧 ${esc(segment.cpt || 'CPT')} [${condSummary}]`;
                 } else {
@@ -490,12 +495,14 @@
                         }
 
                     } else { // tax_match
-                        const src = $(this).find('.dyn-source-tax').val();
-                        const tgt = $(this).find('.dyn-target-tax').val();
+                        const src       = $(this).find('.dyn-source-tax').val();
+                        const tgt       = $(this).find('.dyn-target-tax').val();
+                        const matchMode = $(this).find('.dyn-match-mode').val() || 'exact';
                         if (src && tgt) {
                             const cond = { type: 'tax_match', source_tax: src, target_tax: tgt };
+                            if (matchMode !== 'exact') cond.match_mode = matchMode;
                             const srcDepth = $(this).find('.dyn-source-depth').val();
-                            if (srcDepth !== '') {
+                            if (srcDepth !== '' && matchMode === 'exact') {
                                 cond.source_depth = parseInt(srcDepth, 10);
                             }
                             conditions.push(cond);

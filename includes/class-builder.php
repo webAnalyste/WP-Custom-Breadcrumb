@@ -320,9 +320,10 @@ class Custom_Breadcrumb_Builder
                         continue;
                     }
 
-                    // ── Condition tax_match : trouve le post cible via termes partagés ──
-                    $source_tax = $condition['source_tax'] ?? '';
-                    $target_tax = $condition['target_tax'] ?? '';
+                    // ── Condition tax_match : trouve le post cible via termes ──
+                    $source_tax  = $condition['source_tax']  ?? '';
+                    $target_tax  = $condition['target_tax']  ?? '';
+                    $match_mode  = $condition['match_mode']  ?? 'exact';
 
                     if (empty($source_tax) || empty($target_tax)) {
                         continue;
@@ -334,20 +335,40 @@ class Custom_Breadcrumb_Builder
                         continue;
                     }
 
-                    // Niveau de profondeur optionnel : remonter à l'ancêtre voulu
-                    if (isset($condition['source_depth'])) {
-                        $terms = $this->get_terms_at_depth($terms, $source_tax, intval($condition['source_depth']));
-                        if (empty($terms)) {
-                            continue;
-                        }
-                    }
+                    if ($match_mode === 'ancestors') {
+                        // Mode ancêtre : cherche les posts cibles dont le terme
+                        // est un ANCÊTRE du terme le plus profond du post courant.
+                        // Ex. : post courant a "Google Tag Manager" (enfant de "Web Analytics")
+                        //       → cherche agences qui ont "Web Analytics" (ancêtre)
+                        $deepest      = $this->get_deepest_term($terms);
+                        $ancestor_ids = get_ancestors($deepest->term_id, $source_tax);
 
-                    $tax_query[] = [
-                        'taxonomy' => $target_tax,
-                        'field'    => 'term_id',
-                        'terms'    => wp_list_pluck($terms, 'term_id'),
-                        'operator' => 'IN',
-                    ];
+                        if (empty($ancestor_ids)) {
+                            continue; // pas d'ancêtres → aucune correspondance possible
+                        }
+
+                        $tax_query[] = [
+                            'taxonomy' => $target_tax,
+                            'field'    => 'term_id',
+                            'terms'    => $ancestor_ids,
+                            'operator' => 'IN',
+                        ];
+                    } else {
+                        // Mode exact (défaut) : termes identiques
+                        if (isset($condition['source_depth'])) {
+                            $terms = $this->get_terms_at_depth($terms, $source_tax, intval($condition['source_depth']));
+                            if (empty($terms)) {
+                                continue;
+                            }
+                        }
+
+                        $tax_query[] = [
+                            'taxonomy' => $target_tax,
+                            'field'    => 'term_id',
+                            'terms'    => wp_list_pluck($terms, 'term_id'),
+                            'operator' => 'IN',
+                        ];
+                    }
                 }
 
                 if ($skip_segment) {
@@ -362,7 +383,8 @@ class Custom_Breadcrumb_Builder
                 $query = new WP_Query([
                     'post_type'              => $target_cpt,
                     'post_status'            => 'publish',
-                    'posts_per_page'         => 10, // récupère quelques candidats pour le filtrage post-query
+                    'posts_per_page'         => 10,
+                    'post__not_in'           => [$post->ID], // exclure le post courant lui-même
                     'tax_query'              => $tax_query,
                     'no_found_rows'          => true,
                     'update_post_term_cache' => false,

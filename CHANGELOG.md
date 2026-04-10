@@ -5,6 +5,11 @@ Toutes les modifications notables de ce projet seront documentées dans ce fichi
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet adhère au [Versioning Sémantique](https://semver.org/lang/fr/).
 
+## [2.1.24] - 2026-04-10
+
+### Ajouté
+- fix: segment dynamic_cpt accepte page_level/tax_level_compare sans condition tax_match obligatoire
+
 ## [2.1.23] - 2026-04-10
 
 ### Ajouté

@@ -353,6 +353,22 @@ class Custom_Breadcrumb_Builder
                             'terms'    => $ancestor_ids,
                             'operator' => 'IN',
                         ];
+                    } elseif ($match_mode === 'ancestors_or_equal') {
+                        // Mode ancêtre-ou-égal : cherche les posts cibles dont le terme
+                        // est LE MÊME que OU un ANCÊTRE du terme le plus profond du post courant.
+                        // Ex. : post courant a "Agence Google Analytics" (solution_category : Web Analytics, page_level : 3)
+                        //       → candidats : agences avec "Web Analytics" (même terme) ET agences avec "Data Analytics" (ancêtre)
+                        //       → combiné avec tax_level_compare page_level > cible, retient l'agence au niveau 2 (Web Analytics)
+                        $deepest      = $this->get_deepest_term($terms);
+                        $ancestor_ids = get_ancestors($deepest->term_id, $source_tax);
+                        $term_ids     = array_merge([$deepest->term_id], $ancestor_ids);
+
+                        $tax_query[] = [
+                            'taxonomy' => $target_tax,
+                            'field'    => 'term_id',
+                            'terms'    => $term_ids,
+                            'operator' => 'IN',
+                        ];
                     } else {
                         // Mode exact (défaut) : termes identiques
                         if (isset($condition['source_depth'])) {

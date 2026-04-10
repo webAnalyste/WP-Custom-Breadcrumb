@@ -5,6 +5,13 @@ Toutes les modifications notables de ce projet seront documentées dans ce fichi
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet adhère au [Versioning Sémantique](https://semver.org/lang/fr/).
 
+## [2.1.25] - 2026-04-10
+
+### Ajouté
+- feat: nouveau mode `= terme identique OU ancêtre` (`ancestors_or_equal`) dans les conditions `tax_match` — permet de trouver le post parent hiérarchique le plus proche quelle que soit la profondeur taxonomique, combiné avec `tax_level_compare`
+- fix: avec `= terme ancêtre` seul, les posts au même niveau taxonomique n'étaient pas candidats (ex : "Agence Web Analytics" non trouvé depuis "Agence Google Analytics" car même terme, pas ancêtre)
+- ux: tooltips et exemple concret ajoutés dans les conditions dynamic_cpt (description avec cas page_level + solution_category)
+
 ## [2.1.24] - 2026-04-10
 
 ### Ajouté

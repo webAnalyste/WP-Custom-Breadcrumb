@@ -77,9 +77,10 @@
                     <span class="dyn-source-depth-wrap"${(srcHier && isExact) ? '' : ' style="display:none"'}>
                         niv.&nbsp;<input type="number" class="dyn-source-depth small-text" min="0" max="20" placeholder="auto" value="${esc(String(srcDepth))}" title="Niveau ancêtre à utiliser : 0 = terme racine, 1 = 2ᵉ niveau, etc. Laisser vide = terme le plus spécifique du post courant">
                     </span>
-                    <select class="dyn-match-mode" title="Exact : le post cible doit avoir LE MÊME terme. Ancêtre : le post cible doit avoir un terme PARENT du terme du post courant (utile si la taxonomie a des termes parent/enfant et que la cible est à un niveau supérieur).">
+                    <select class="dyn-match-mode" title="Identique : le CPT cible doit avoir exactement le même terme (ex : même catégorie solution). Ancêtre : le CPT cible doit avoir un terme PARENT du terme courant (ex : courant = Web Analytics → cible doit avoir Data Analytics). Identique OU ancêtre : combine les deux — recommandé avec tax_level_compare pour naviguer vers le niveau supérieur le plus proche quelle que soit la profondeur (ex : courant = Web Analytics niveau 3 → candidats : agence Web Analytics niveau 2 ET agence Data Analytics niveau 1 → tax_level_compare retient le plus proche).">
                         <option value="exact"${(data.match_mode || 'exact') === 'exact' ? ' selected' : ''}>= terme identique</option>
                         <option value="ancestors"${data.match_mode === 'ancestors' ? ' selected' : ''}>= terme ancêtre du post courant</option>
+                        <option value="ancestors_or_equal"${data.match_mode === 'ancestors_or_equal' ? ' selected' : ''}>= terme identique OU ancêtre ⭐</option>
                     </select>
                     <span class="dyn-cond-label">CPT cible dans</span>
                     <select class="dyn-target-tax">${buildTaxonomyOptions(data.target_tax || '')}</select>
@@ -94,11 +95,11 @@
 
                 <span class="dyn-cond-tax-level-compare"${showLvl ? '' : ' style="display:none"'}>
                     <span class="dyn-cond-label">Valeur taxo</span>
-                    <select class="dyn-tlc-tax" title="Taxonomie utilisée pour comparer les niveaux. Pour une taxo hiérarchique (parent/enfant WP), compare la profondeur. Pour une taxo plate avec des termes nommés 'level 1', 'level 2'… compare le numéro extrait du nom.">${buildTaxonomyOptions(data.taxonomy || '')}</select>
+                    <select class="dyn-tlc-tax" title="Taxonomie utilisée pour comparer les niveaux. &#10;• Taxo hiérarchique (parent/enfant WP) : compare la profondeur (0 = racine, 1 = enfant direct…). &#10;• Taxo plate avec termes numériques ('1', '2', 'level 3', 'niveau-2'…) : extrait le numéro du nom du terme. &#10;Exemple : page_level = '3' → valeur 3 ; 'Web Analytics' est enfant de 'Data Analytics' → profondeur 1.">${buildTaxonomyOptions(data.taxonomy || '')}</select>
                     <span class="dyn-cond-label">du post courant</span>
                     <select class="dyn-tlc-op">${buildOperatorOptions(data.operator || '=')}</select>
                     <span class="dyn-cond-label">valeur du post cible</span>
-                    <span class="description" title="Fonctionne avec les taxonomies hiérarchiques (profondeur) ET les taxonomies plates dont les termes contiennent un numéro : 'level 1', 'niveau-2', '3'…">ℹ️</span>
+                    <span class="description" title="Exemple : post courant a page_level='3' (valeur 3), opérateur '>', post cible a page_level='2' (valeur 2) → 3 > 2 ✓ → candidat retenu. &#10;Combiné avec '= terme identique OU ancêtre', retient l'agence au niveau immédiatement supérieur.">ℹ️</span>
                 </span>
 
                 <button type="button" class="button-link dyn-remove-condition" title="Supprimer cette condition">🗑️</button>
@@ -341,7 +342,7 @@
                             return `niv(${esc(c.taxonomy || '?')})${esc(c.operator || '=')}niv_cible`;
                         }
                         const depth = c.source_depth !== undefined ? `[niv.${c.source_depth}]` : '';
-                        const mode  = c.match_mode === 'ancestors' ? '⊃' : '=';
+                        const mode  = c.match_mode === 'ancestors' ? '⊃' : c.match_mode === 'ancestors_or_equal' ? '⊇' : '=';
                         return `${esc(c.source_tax || '?')}${depth}${mode}${esc(c.target_tax || '?')}`;
                     }).join(', ');
                     preview += customLabel || `🔧 ${esc(segment.cpt || 'CPT')} [${condSummary}]`;

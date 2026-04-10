@@ -5,6 +5,11 @@ Toutes les modifications notables de ce projet seront documentées dans ce fichi
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet adhère au [Versioning Sémantique](https://semver.org/lang/fr/).
 
+## [2.1.23] - 2026-04-10
+
+### Ajouté
+- fix: tax_level_compare — taxo plate (level 1/2/3) + tri par proximité + UX tooltips
+
 ## [2.1.22] - 2026-04-10
 
 ### Ajouté

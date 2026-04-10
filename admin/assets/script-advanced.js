@@ -521,9 +521,8 @@
                         }
                     }
                 });
-                // Un segment dynamic_cpt requiert au moins une condition tax_match
-                const hasTaxMatch = conditions.some(c => c.source_tax && c.target_tax);
-                if (cpt && hasTaxMatch) {
+                // Un segment dynamic_cpt requiert un CPT cible et au moins une condition valide
+                if (cpt && conditions.length > 0) {
                     segment = { type, cpt, conditions };
                 }
             }

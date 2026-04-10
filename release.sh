@@ -83,7 +83,7 @@ cp uninstall.php "$PLUGIN_DIR/"
 cp -r includes "$PLUGIN_DIR/"
 cp -r admin "$PLUGIN_DIR/"
 cp -r assets "$PLUGIN_DIR/"
-cp README-PLUGIN.md "$PLUGIN_DIR/README.md"
+cp README.md "$PLUGIN_DIR/README.md"
 
 # Créer le ZIP
 cd "$TEMP_DIR"

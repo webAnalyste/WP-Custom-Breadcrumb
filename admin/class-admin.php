@@ -85,6 +85,8 @@ class Custom_Breadcrumb_Admin
         $success = $this->config->update_settings($settings);
 
         if ($success) {
+            // Forcer WordPress à re-vérifier les mises à jour au prochain chargement
+            delete_site_transient('update_plugins');
             wp_send_json_success(['message' => 'Configuration enregistrée']);
         } else {
             wp_send_json_error(['message' => 'Erreur lors de l\'enregistrement']);

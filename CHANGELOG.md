@@ -5,6 +5,14 @@ Toutes les modifications notables de ce projet seront documentées dans ce fichi
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet adhère au [Versioning Sémantique](https://semver.org/lang/fr/).
 
+## [2.1.18] - 2026-04-10
+
+### Corrigé
+- **Mise à jour automatique** : ajout du header `User-Agent` requis par l'API GitHub (cause principale du dysfonctionnement — retournait 403 silencieusement)
+- Vérification du code HTTP avant de parser la réponse GitHub (évite de parser des erreurs JSON)
+- `after_install` : suppression de `activate_plugin()` superflu pendant les updates ; le move n'est effectué que si la destination diffère réellement
+- Vidage du transient `update_plugins` à chaque sauvegarde pour forcer une vérification fraîche
+
 ## [2.1.17] - 2026-04-10
 
 ### Modifié

@@ -390,7 +390,7 @@ $pages = get_pages(['number' => 100]);
                     <option value="page">📄 Page WordPress</option>
                     <option value="archive">📚 Archive</option>
                     <option value="taxonomy">🏷️ Taxonomie</option>
-                    <option value="dynamic_cpt">🔗 CPT dynamique</option>
+                    <option value="dynamic_cpt">🔧 Personnalisé</option>
                 </select>
             </div>
 

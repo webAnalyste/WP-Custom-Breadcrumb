@@ -247,7 +247,7 @@
                     const condSummary = (segment.conditions || []).map(function (c) {
                         return `${esc(c.source_tax || '?')}→${esc(c.target_tax || '?')}`;
                     }).join(', ');
-                    preview += customLabel || `🔗 ${esc(segment.cpt || 'CPT')} [${condSummary}]`;
+                    preview += customLabel || `🔧 ${esc(segment.cpt || 'CPT')} [${condSummary}]`;
                 } else {
                     preview += customLabel || '?';
                 }

@@ -127,7 +127,7 @@ class Custom_Breadcrumb_Admin
             if ($tax->name === 'post_format') {
                 continue;
             }
-            $result[] = ['name' => $tax->name, 'label' => $tax->labels->singular_name];
+            $result[] = ['name' => $tax->name, 'label' => $tax->labels->singular_name, 'hierarchical' => (bool) $tax->hierarchical];
         }
         return $result;
     }

@@ -291,9 +291,25 @@ class Custom_Breadcrumb_Builder
                     break;
                 }
 
-                $tax_query = ['relation' => 'AND'];
+                $tax_query    = ['relation' => 'AND'];
+                $skip_segment = false;
 
                 foreach ($conditions as $condition) {
+                    $cond_type = $condition['type'] ?? 'tax_cross';
+
+                    // Condition de garde : niveau hiérarchique de la page courante
+                    if ($cond_type === 'page_level') {
+                        $page_depth = count(get_post_ancestors($post->ID));
+                        $operator   = $condition['operator'] ?? '=';
+                        $n          = intval($condition['value'] ?? 0);
+                        if (!$this->compare_values($page_depth, $operator, $n)) {
+                            $skip_segment = true;
+                            break;
+                        }
+                        continue; // pas de tax_query pour ce type
+                    }
+
+                    // Condition taxonomique croisée (comportement historique)
                     $source_tax = $condition['source_tax'] ?? '';
                     $target_tax = $condition['target_tax'] ?? '';
 
@@ -307,6 +323,14 @@ class Custom_Breadcrumb_Builder
                         continue;
                     }
 
+                    // Si un niveau de profondeur est précisé pour la source, remonter à l'ancêtre voulu
+                    if (isset($condition['source_depth'])) {
+                        $terms = $this->get_terms_at_depth($terms, $source_tax, intval($condition['source_depth']));
+                        if (empty($terms)) {
+                            continue;
+                        }
+                    }
+
                     $tax_query[] = [
                         'taxonomy' => $target_tax,
                         'field'    => 'term_id',
@@ -315,7 +339,11 @@ class Custom_Breadcrumb_Builder
                     ];
                 }
 
-                // Au moins une condition effective doit exister
+                if ($skip_segment) {
+                    break;
+                }
+
+                // Au moins une condition taxonomique effective doit exister
                 if (count($tax_query) <= 1) {
                     break;
                 }
@@ -612,5 +640,53 @@ class Custom_Breadcrumb_Builder
             'url' => '',
             'type' => 'current',
         ];
+    }
+
+    /**
+     * Retourne les termes au niveau de profondeur voulu depuis la racine.
+     * Niveau 0 = terme racine (top-level), 1 = enfant direct de la racine, etc.
+     * Si le terme courant est moins profond que le niveau demandé, retourne le tableau original.
+     */
+    private function get_terms_at_depth(array $terms, string $taxonomy, int $target_depth): array
+    {
+        $term = $this->get_deepest_term($terms);
+
+        // ancestors : du plus proche au plus éloigné (parent, grand-parent, …, racine)
+        $ancestors = get_ancestors($term->term_id, $taxonomy);
+        $current_depth = count($ancestors); // profondeur du terme lui-même (0 = racine)
+
+        if ($target_depth === $current_depth) {
+            return [$term];
+        }
+
+        if ($target_depth < $current_depth) {
+            // L'ancêtre au niveau voulu : dans le tableau ancestors (du plus proche),
+            // l'index de l'ancêtre à profondeur $target_depth est ($current_depth - $target_depth - 1)
+            $ancestor_index = $current_depth - $target_depth - 1;
+            if (isset($ancestors[$ancestor_index])) {
+                $ancestor = get_term($ancestors[$ancestor_index], $taxonomy);
+                if ($ancestor && !is_wp_error($ancestor)) {
+                    return [$ancestor];
+                }
+            }
+        }
+
+        // Niveau demandé plus profond que le terme courant : retourner les termes tels quels
+        return $terms;
+    }
+
+    /**
+     * Compare deux entiers avec un opérateur textuel.
+     */
+    private function compare_values(int $a, string $operator, int $b): bool
+    {
+        switch ($operator) {
+            case '=':  return $a === $b;
+            case '>':  return $a > $b;
+            case '>=': return $a >= $b;
+            case '<':  return $a < $b;
+            case '<=': return $a <= $b;
+            default:   return false;
+        }
     }
 }

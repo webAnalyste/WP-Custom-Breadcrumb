@@ -78,7 +78,7 @@
                     </span>
                     <select class="dyn-match-mode">
                         <option value="exact"${(data.match_mode || 'exact') === 'exact' ? ' selected' : ''}>= terme identique</option>
-                        <option value="ancestors"${data.match_mode === 'ancestors' ? ' selected' : ''}">= terme ancêtre du post courant</option>
+                        <option value="ancestors"${data.match_mode === 'ancestors' ? ' selected' : ''}>= terme ancêtre du post courant</option>
                     </select>
                     <span class="dyn-cond-label">CPT cible dans</span>
                     <select class="dyn-target-tax">${buildTaxonomyOptions(data.target_tax || '')}</select>

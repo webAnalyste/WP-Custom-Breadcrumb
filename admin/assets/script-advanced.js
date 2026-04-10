@@ -52,26 +52,31 @@
 
     function addConditionRow($container, data) {
         data = data || {};
-        const condType = data.type === 'page_level' ? 'page_level' : 'tax_cross';
-        const showTax  = condType !== 'page_level';
-        const showPage = condType === 'page_level';
-        const srcHier  = isTaxHierarchical(data.source_tax || '');
-        const srcDepth = (data.source_depth !== undefined && data.source_depth !== null) ? data.source_depth : '';
+        // Compatibilité ascendante : tax_cross → tax_match
+        let condType = data.type || 'tax_match';
+        if (condType === 'tax_cross') condType = 'tax_match';
+
+        const showMatch  = condType === 'tax_match';
+        const showPage   = condType === 'page_level';
+        const showLvl    = condType === 'tax_level_compare';
+        const srcHier    = isTaxHierarchical(data.source_tax || '');
+        const srcDepth   = (data.source_depth !== undefined && data.source_depth !== null) ? data.source_depth : '';
 
         const $row = $(`
             <div class="dyn-condition">
                 <select class="dyn-cond-type">
-                    <option value="tax_cross"${showTax ? ' selected' : ''}>Taxo croisée</option>
+                    <option value="tax_match"${showMatch ? ' selected' : ''}>Même terme (taxo)</option>
                     <option value="page_level"${showPage ? ' selected' : ''}>Niveau de page</option>
+                    <option value="tax_level_compare"${showLvl ? ' selected' : ''}>Comparer profondeurs taxo</option>
                 </select>
 
-                <span class="dyn-cond-tax-cross"${showTax ? '' : ' style="display:none"'}>
+                <span class="dyn-cond-tax-match"${showMatch ? '' : ' style="display:none"'}>
                     <span class="dyn-cond-label">Post courant dans</span>
                     <select class="dyn-source-tax">${buildTaxonomyOptions(data.source_tax || '')}</select>
                     <span class="dyn-source-depth-wrap"${srcHier ? '' : ' style="display:none"'}>
                         niv.&nbsp;<input type="number" class="dyn-source-depth small-text" min="0" max="20" placeholder="auto" value="${esc(String(srcDepth))}">
                     </span>
-                    <span class="dyn-cond-label">=&nbsp;CPT cible dans</span>
+                    <span class="dyn-cond-label">= CPT cible dans</span>
                     <select class="dyn-target-tax">${buildTaxonomyOptions(data.target_tax || '')}</select>
                 </span>
 
@@ -80,6 +85,14 @@
                     <select class="dyn-page-op">${buildOperatorOptions(data.operator || '=')}</select>
                     <input type="number" class="dyn-page-level-val small-text" min="0" max="20" value="${data.value !== undefined ? esc(String(data.value)) : '0'}">
                     <span class="description">(0&nbsp;= page racine)</span>
+                </span>
+
+                <span class="dyn-cond-tax-level-compare"${showLvl ? '' : ' style="display:none"'}>
+                    <span class="dyn-cond-label">Profondeur taxo</span>
+                    <select class="dyn-tlc-tax">${buildTaxonomyOptions(data.taxonomy || '')}</select>
+                    <span class="dyn-cond-label">du post courant</span>
+                    <select class="dyn-tlc-op">${buildOperatorOptions(data.operator || '=')}</select>
+                    <span class="dyn-cond-label">profondeur du post cible</span>
                 </span>
 
                 <button type="button" class="button-link dyn-remove-condition" title="Supprimer cette condition">🗑️</button>
@@ -136,12 +149,13 @@
             $(this).closest('.dyn-condition').remove();
         });
 
-        // Changer le type de condition (taxo croisée / niveau de page)
+        // Changer le type de condition
         $(document).on('change', '.dyn-cond-type', function () {
             const $row = $(this).closest('.dyn-condition');
             const type = $(this).val();
-            $row.find('.dyn-cond-tax-cross').toggle(type === 'tax_cross');
+            $row.find('.dyn-cond-tax-match').toggle(type === 'tax_match');
             $row.find('.dyn-cond-page-level').toggle(type === 'page_level');
+            $row.find('.dyn-cond-tax-level-compare').toggle(type === 'tax_level_compare');
         });
 
         // Changer la taxo source → afficher/masquer le sélecteur de niveau
@@ -307,6 +321,9 @@
                         if (c.type === 'page_level') {
                             return `page_level${esc(c.operator || '=')}${c.value !== undefined ? c.value : 0}`;
                         }
+                        if (c.type === 'tax_level_compare') {
+                            return `niv(${esc(c.taxonomy || '?')})${esc(c.operator || '=')}niv_cible`;
+                        }
                         const depth = c.source_depth !== undefined ? `[niv.${c.source_depth}]` : '';
                         return `${esc(c.source_tax || '?')}${depth}→${esc(c.target_tax || '?')}`;
                     }).join(', ');
@@ -457,16 +474,26 @@
                 const cpt = $segment.find('.segment-dyn-cpt').val();
                 const conditions = [];
                 $segment.find('.dyn-condition').each(function () {
-                    const condType = $(this).find('.dyn-cond-type').val() || 'tax_cross';
+                    let condType = $(this).find('.dyn-cond-type').val() || 'tax_match';
+                    if (condType === 'tax_cross') condType = 'tax_match'; // compat
+
                     if (condType === 'page_level') {
                         const op  = $(this).find('.dyn-page-op').val();
                         const val = parseInt($(this).find('.dyn-page-level-val').val() || '0', 10);
                         conditions.push({ type: 'page_level', operator: op, value: val });
-                    } else {
+
+                    } else if (condType === 'tax_level_compare') {
+                        const tax = $(this).find('.dyn-tlc-tax').val();
+                        const op  = $(this).find('.dyn-tlc-op').val();
+                        if (tax) {
+                            conditions.push({ type: 'tax_level_compare', taxonomy: tax, operator: op });
+                        }
+
+                    } else { // tax_match
                         const src = $(this).find('.dyn-source-tax').val();
                         const tgt = $(this).find('.dyn-target-tax').val();
                         if (src && tgt) {
-                            const cond = { source_tax: src, target_tax: tgt };
+                            const cond = { type: 'tax_match', source_tax: src, target_tax: tgt };
                             const srcDepth = $(this).find('.dyn-source-depth').val();
                             if (srcDepth !== '') {
                                 cond.source_depth = parseInt(srcDepth, 10);
@@ -475,9 +502,9 @@
                         }
                     }
                 });
-                // Un segment dynamic_cpt requiert au moins une condition taxo croisée
-                const hasTaxCross = conditions.some(c => c.source_tax && c.target_tax);
-                if (cpt && hasTaxCross) {
+                // Un segment dynamic_cpt requiert au moins une condition tax_match
+                const hasTaxMatch = conditions.some(c => c.source_tax && c.target_tax);
+                if (cpt && hasTaxMatch) {
                     segment = { type, cpt, conditions };
                 }
             }

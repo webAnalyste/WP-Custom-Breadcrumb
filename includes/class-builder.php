@@ -291,13 +291,18 @@ class Custom_Breadcrumb_Builder
                     break;
                 }
 
-                $tax_query    = ['relation' => 'AND'];
-                $skip_segment = false;
+                $tax_query        = ['relation' => 'AND'];
+                $skip_segment     = false;
+                $post_filters     = []; // conditions évaluées après la WP_Query
 
                 foreach ($conditions as $condition) {
-                    $cond_type = $condition['type'] ?? 'tax_cross';
+                    // Compatibilité : ancienne valeur 'tax_cross' = 'tax_match'
+                    $cond_type = $condition['type'] ?? 'tax_match';
+                    if ($cond_type === 'tax_cross') {
+                        $cond_type = 'tax_match';
+                    }
 
-                    // Condition de garde : niveau hiérarchique de la page courante
+                    // ── Garde pré-query : niveau hiérarchique de la page courante ──
                     if ($cond_type === 'page_level') {
                         $page_depth = count(get_post_ancestors($post->ID));
                         $operator   = $condition['operator'] ?? '=';
@@ -306,10 +311,16 @@ class Custom_Breadcrumb_Builder
                             $skip_segment = true;
                             break;
                         }
-                        continue; // pas de tax_query pour ce type
+                        continue;
                     }
 
-                    // Condition taxonomique croisée (comportement historique)
+                    // ── Filtre post-query : comparaison de profondeurs taxonomiques ──
+                    if ($cond_type === 'tax_level_compare') {
+                        $post_filters[] = $condition;
+                        continue;
+                    }
+
+                    // ── Condition tax_match : trouve le post cible via termes partagés ──
                     $source_tax = $condition['source_tax'] ?? '';
                     $target_tax = $condition['target_tax'] ?? '';
 
@@ -323,7 +334,7 @@ class Custom_Breadcrumb_Builder
                         continue;
                     }
 
-                    // Si un niveau de profondeur est précisé pour la source, remonter à l'ancêtre voulu
+                    // Niveau de profondeur optionnel : remonter à l'ancêtre voulu
                     if (isset($condition['source_depth'])) {
                         $terms = $this->get_terms_at_depth($terms, $source_tax, intval($condition['source_depth']));
                         if (empty($terms)) {
@@ -343,7 +354,7 @@ class Custom_Breadcrumb_Builder
                     break;
                 }
 
-                // Au moins une condition taxonomique effective doit exister
+                // Au moins une condition tax_match doit exister pour construire la query
                 if (count($tax_query) <= 1) {
                     break;
                 }
@@ -351,21 +362,67 @@ class Custom_Breadcrumb_Builder
                 $query = new WP_Query([
                     'post_type'              => $target_cpt,
                     'post_status'            => 'publish',
-                    'posts_per_page'         => 1,
+                    'posts_per_page'         => 10, // récupère quelques candidats pour le filtrage post-query
                     'tax_query'              => $tax_query,
                     'no_found_rows'          => true,
                     'update_post_term_cache' => false,
                     'update_post_meta_cache' => false,
                 ]);
 
-                if ($query->have_posts()) {
-                    $found = $query->posts[0];
-                    $this->items[] = [
-                        'label' => $custom_label ?? get_the_title($found),
-                        'url'   => get_permalink($found),
-                        'type'  => 'segment',
-                    ];
+                if (!$query->have_posts()) {
+                    break;
                 }
+
+                // ── Filtres post-query (tax_level_compare) ──
+                $found = null;
+                foreach ($query->posts as $candidate) {
+                    $candidate_ok = true;
+                    foreach ($post_filters as $filter) {
+                        if ($filter['type'] !== 'tax_level_compare') {
+                            continue;
+                        }
+                        $taxonomy = $filter['taxonomy'] ?? '';
+                        $operator = $filter['operator'] ?? '=';
+                        if (empty($taxonomy)) {
+                            continue;
+                        }
+
+                        $current_terms = get_the_terms($post->ID, $taxonomy);
+                        $target_terms  = get_the_terms($candidate->ID, $taxonomy);
+
+                        if (empty($current_terms) || is_wp_error($current_terms) ||
+                            empty($target_terms)  || is_wp_error($target_terms)) {
+                            $candidate_ok = false;
+                            break;
+                        }
+
+                        $current_depth = count(get_ancestors(
+                            $this->get_deepest_term($current_terms)->term_id, $taxonomy
+                        ));
+                        $target_depth  = count(get_ancestors(
+                            $this->get_deepest_term($target_terms)->term_id, $taxonomy
+                        ));
+
+                        if (!$this->compare_values($current_depth, $operator, $target_depth)) {
+                            $candidate_ok = false;
+                            break;
+                        }
+                    }
+                    if ($candidate_ok) {
+                        $found = $candidate;
+                        break;
+                    }
+                }
+
+                if (!$found) {
+                    break;
+                }
+
+                $this->items[] = [
+                    'label' => $custom_label ?? get_the_title($found),
+                    'url'   => get_permalink($found),
+                    'type'  => 'segment',
+                ];
                 break;
 
             case 'taxonomy':

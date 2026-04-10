@@ -5,6 +5,11 @@ Toutes les modifications notables de ce projet seront documentées dans ce fichi
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet adhère au [Versioning Sémantique](https://semver.org/lang/fr/).
 
+## [2.1.19] - 2026-04-10
+
+### Ajouté
+- feat: conditions dynamic_cpt — niveau de page (page_level) et profondeur taxo hiérarchique (source_depth)
+
 ## [2.1.18] - 2026-04-10
 
 ### Corrigé

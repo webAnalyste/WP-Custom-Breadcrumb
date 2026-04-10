@@ -13,6 +13,40 @@
         return $('<span>').text(str).html();
     }
 
+    function buildCptOptions(selectedValue) {
+        const types = (typeof customBreadcrumb !== 'undefined' && customBreadcrumb.postTypes) ? customBreadcrumb.postTypes : [];
+        let html = '<option value="">— Sélectionner un CPT cible —</option>';
+        types.forEach(function (pt) {
+            const sel = pt.name === selectedValue ? ' selected' : '';
+            html += `<option value="${esc(pt.name)}"${sel}>${esc(pt.label)} <em>(${esc(pt.name)})</em></option>`;
+        });
+        return html;
+    }
+
+    function buildTaxonomyOptions(selectedValue) {
+        const taxes = (typeof customBreadcrumb !== 'undefined' && customBreadcrumb.taxonomies) ? customBreadcrumb.taxonomies : [];
+        let html = '<option value="">— Taxonomie —</option>';
+        taxes.forEach(function (tax) {
+            const sel = tax.name === selectedValue ? ' selected' : '';
+            html += `<option value="${esc(tax.name)}"${sel}>${esc(tax.label)} <em>(${esc(tax.name)})</em></option>`;
+        });
+        return html;
+    }
+
+    function addConditionRow($container, data) {
+        data = data || {};
+        const $row = $(`
+            <div class="dyn-condition">
+                <span class="dyn-cond-label">Post courant dans</span>
+                <select class="dyn-source-tax">${buildTaxonomyOptions(data.source_tax || '')}</select>
+                <span class="dyn-cond-label">=&nbsp;CPT cible dans</span>
+                <select class="dyn-target-tax">${buildTaxonomyOptions(data.target_tax || '')}</select>
+                <button type="button" class="button-link dyn-remove-condition" title="Supprimer cette condition">🗑️</button>
+            </div>
+        `);
+        $container.append($row);
+    }
+
     $(document).ready(function () {
 
         // Charger les règles existantes
@@ -48,6 +82,17 @@
         // Changer type de segment
         $(document).on('change', '.segment-type', function () {
             updateSegmentFields($(this).closest('.cb-segment'));
+        });
+
+        // Ajouter une condition dynamique
+        $(document).on('click', '.dyn-add-condition', function () {
+            const $condList = $(this).closest('.segment-dynamic-cpt').find('.dyn-conditions-list');
+            addConditionRow($condList, {});
+        });
+
+        // Supprimer une condition dynamique
+        $(document).on('click', '.dyn-remove-condition', function () {
+            $(this).closest('.dyn-condition').remove();
         });
 
         // Actions segments
@@ -198,8 +243,13 @@
                     preview += customLabel || `📚 ${esc(segment.value)}`;
                 } else if (segment.type === 'taxonomy') {
                     preview += customLabel || `🏷️ ${esc(segment.value)}`;
+                } else if (segment.type === 'dynamic_cpt') {
+                    const condSummary = (segment.conditions || []).map(function (c) {
+                        return `${esc(c.source_tax || '?')}→${esc(c.target_tax || '?')}`;
+                    }).join(', ');
+                    preview += customLabel || `🔗 ${esc(segment.cpt || 'CPT')} [${condSummary}]`;
                 } else {
-                    preview += customLabel || '🔧 Personnalisé';
+                    preview += customLabel || '?';
                 }
             });
         }
@@ -270,6 +320,16 @@
                 $template.find('.segment-archive').val(data.value || '');
             } else if (data.type === 'taxonomy') {
                 $template.find('.segment-taxonomy').val(data.value || '');
+            } else if (data.type === 'dynamic_cpt') {
+                const $dynPanel = $template.find('.segment-dynamic-cpt');
+                $dynPanel.find('.segment-dyn-cpt').html(buildCptOptions(data.cpt || ''));
+                const $condList = $dynPanel.find('.dyn-conditions-list');
+                $condList.empty();
+                if (data.conditions && data.conditions.length > 0) {
+                    data.conditions.forEach(function (cond) {
+                        addConditionRow($condList, cond);
+                    });
+                }
             }
         }
 
@@ -280,7 +340,7 @@
     function updateSegmentFields($segment) {
         const type = $segment.find('.segment-type').val();
 
-        $segment.find('.segment-text, .segment-page, .segment-archive, .segment-taxonomy').hide();
+        $segment.find('.segment-text, .segment-page, .segment-archive, .segment-taxonomy, .segment-dynamic-cpt').hide();
 
         if (type === 'text') {
             $segment.find('.segment-text').show();
@@ -290,6 +350,13 @@
             $segment.find('.segment-archive').show();
         } else if (type === 'taxonomy') {
             $segment.find('.segment-taxonomy').show();
+        } else if (type === 'dynamic_cpt') {
+            const $dynPanel = $segment.find('.segment-dynamic-cpt');
+            // Peupler le select CPT s'il est vide
+            if ($dynPanel.find('.segment-dyn-cpt option').length <= 1) {
+                $dynPanel.find('.segment-dyn-cpt').html(buildCptOptions(''));
+            }
+            $dynPanel.show();
         }
     }
 
@@ -308,23 +375,37 @@
             const $segment = $(this);
             const type = $segment.find('.segment-type').val();
             const label = $segment.find('.segment-label').val().trim();
-            let value = '';
+            let segment = null;
 
             if (type === 'text') {
-                value = $segment.find('.segment-text').val();
+                const value = $segment.find('.segment-text').val();
+                if (value) segment = { type, value };
             } else if (type === 'page') {
-                value = $segment.find('.segment-page').val();
+                const value = $segment.find('.segment-page').val();
+                if (value) segment = { type, value };
             } else if (type === 'archive') {
-                value = $segment.find('.segment-archive').val();
+                const value = $segment.find('.segment-archive').val();
+                if (value) segment = { type, value };
             } else if (type === 'taxonomy') {
-                value = $segment.find('.segment-taxonomy').val();
+                const value = $segment.find('.segment-taxonomy').val();
+                if (value) segment = { type, value };
+            } else if (type === 'dynamic_cpt') {
+                const cpt = $segment.find('.segment-dyn-cpt').val();
+                const conditions = [];
+                $segment.find('.dyn-condition').each(function () {
+                    const src = $(this).find('.dyn-source-tax').val();
+                    const tgt = $(this).find('.dyn-target-tax').val();
+                    if (src && tgt) {
+                        conditions.push({ source_tax: src, target_tax: tgt });
+                    }
+                });
+                if (cpt && conditions.length > 0) {
+                    segment = { type, cpt, conditions };
+                }
             }
 
-            if (value) {
-                const segment = { type, value };
-                if (label) {
-                    segment.label = label;
-                }
+            if (segment) {
+                if (label) segment.label = label;
                 rule.segments.push(segment);
             }
         });

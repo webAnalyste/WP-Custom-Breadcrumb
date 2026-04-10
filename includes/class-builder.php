@@ -226,7 +226,8 @@ class Custom_Breadcrumb_Builder
         $value = $segment['value'] ?? '';
         $custom_label = isset($segment['label']) && $segment['label'] !== '' ? $segment['label'] : null;
 
-        if (empty($value)) {
+        // dynamic_cpt n'utilise pas de champ value — les autres oui
+        if ($type !== 'dynamic_cpt' && empty($value)) {
             return;
         }
 
@@ -269,6 +270,73 @@ class Custom_Breadcrumb_Builder
                             'type' => 'segment',
                         ];
                     }
+                }
+                break;
+
+            case 'dynamic_cpt':
+                // Résolution d'un post CPT via conditions taxonomiques croisées
+                if (!$this->context->is_singular()) {
+                    break;
+                }
+
+                $post = $this->context->get_post();
+                if (!$post) {
+                    break;
+                }
+
+                $target_cpt = $segment['cpt'] ?? '';
+                $conditions  = $segment['conditions'] ?? [];
+
+                if (empty($target_cpt) || empty($conditions)) {
+                    break;
+                }
+
+                $tax_query = ['relation' => 'AND'];
+
+                foreach ($conditions as $condition) {
+                    $source_tax = $condition['source_tax'] ?? '';
+                    $target_tax = $condition['target_tax'] ?? '';
+
+                    if (empty($source_tax) || empty($target_tax)) {
+                        continue;
+                    }
+
+                    $terms = get_the_terms($post->ID, $source_tax);
+
+                    if (empty($terms) || is_wp_error($terms)) {
+                        continue;
+                    }
+
+                    $tax_query[] = [
+                        'taxonomy' => $target_tax,
+                        'field'    => 'term_id',
+                        'terms'    => wp_list_pluck($terms, 'term_id'),
+                        'operator' => 'IN',
+                    ];
+                }
+
+                // Au moins une condition effective doit exister
+                if (count($tax_query) <= 1) {
+                    break;
+                }
+
+                $query = new WP_Query([
+                    'post_type'              => $target_cpt,
+                    'post_status'            => 'publish',
+                    'posts_per_page'         => 1,
+                    'tax_query'              => $tax_query,
+                    'no_found_rows'          => true,
+                    'update_post_term_cache' => false,
+                    'update_post_meta_cache' => false,
+                ]);
+
+                if ($query->have_posts()) {
+                    $found = $query->posts[0];
+                    $this->items[] = [
+                        'label' => $custom_label ?? get_the_title($found),
+                        'url'   => get_permalink($found),
+                        'type'  => 'segment',
+                    ];
                 }
                 break;
 

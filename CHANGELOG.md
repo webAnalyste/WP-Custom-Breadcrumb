@@ -5,6 +5,15 @@ Toutes les modifications notables de ce projet seront documentées dans ce fichi
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet adhère au [Versioning Sémantique](https://semver.org/lang/fr/).
 
+## [2.1.15] - 2026-04-10
+
+### Ajouté
+- Nouveau type de segment **CPT dynamique** (`dynamic_cpt`) : résolution d'un post CPT parent via conditions taxonomiques croisées
+- Système de conditions multiple (logique ET) : chaque condition lie la taxonomie du post courant à celle du CPT cible
+- Interface de configuration dans l'admin : sélecteur CPT cible + constructeur de conditions ajout/suppression
+- Le segment "Personnalisé" (non fonctionnel) remplacé par ce nouveau type opérationnel
+- Les listes de CPTs et taxonomies sont désormais passées dynamiquement au JS depuis PHP
+
 ## [2.1.2] - 2026-03-19
 
 ### Ajouté

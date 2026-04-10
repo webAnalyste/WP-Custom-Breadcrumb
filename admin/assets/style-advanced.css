@@ -539,3 +539,84 @@
         align-items: flex-start;
     }
 }
+
+/* SEGMENT : CPT DYNAMIQUE */
+.segment-dynamic-cpt {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    width: 100%;
+    background: #f0f6ff;
+    border: 1px solid #c3d9f7;
+    border-radius: 6px;
+    padding: 12px;
+}
+
+.dyn-cpt-target {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.dyn-label-inline {
+    font-size: 12px;
+    font-weight: 600;
+    color: #444;
+    white-space: nowrap;
+}
+
+.dyn-cpt-conditions {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.dyn-conditions-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.dyn-condition {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: #fff;
+    border: 1px solid #dde5f0;
+    border-radius: 4px;
+    padding: 6px 8px;
+    flex-wrap: wrap;
+}
+
+.dyn-cond-label {
+    font-size: 11px;
+    color: #666;
+    white-space: nowrap;
+}
+
+.dyn-condition select {
+    flex: 1;
+    min-width: 140px;
+    font-size: 12px;
+}
+
+.dyn-remove-condition {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 2px 4px;
+    color: #d63638;
+    font-size: 14px;
+    line-height: 1;
+}
+
+.dyn-remove-condition:hover {
+    opacity: 0.7;
+}
+
+.dyn-add-condition {
+    align-self: flex-start;
+    font-size: 12px !important;
+    padding: 3px 10px !important;
+    height: auto !important;
+}

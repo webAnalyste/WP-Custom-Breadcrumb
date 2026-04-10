@@ -57,9 +57,11 @@ class Custom_Breadcrumb_Admin
         );
 
         wp_localize_script('custom-breadcrumb-admin', 'customBreadcrumb', [
-            'ajaxUrl' => admin_url('admin-ajax.php'),
-            'nonce' => wp_create_nonce('custom_breadcrumb_save'),
-            'settings' => $this->config->get_settings(),
+            'ajaxUrl'    => admin_url('admin-ajax.php'),
+            'nonce'      => wp_create_nonce('custom_breadcrumb_save'),
+            'settings'   => $this->config->get_settings(),
+            'postTypes'  => $this->get_public_post_types(),
+            'taxonomies' => $this->get_public_taxonomies(),
         ]);
     }
 
@@ -86,6 +88,32 @@ class Custom_Breadcrumb_Admin
         } else {
             wp_send_json_error(['message' => 'Erreur lors de l\'enregistrement']);
         }
+    }
+
+    private function get_public_post_types(): array
+    {
+        $post_types = get_post_types(['public' => true], 'objects');
+        $result = [];
+        foreach ($post_types as $pt) {
+            if ($pt->name === 'attachment') {
+                continue;
+            }
+            $result[] = ['name' => $pt->name, 'label' => $pt->labels->name];
+        }
+        return $result;
+    }
+
+    private function get_public_taxonomies(): array
+    {
+        $taxonomies = get_taxonomies(['public' => true], 'objects');
+        $result = [];
+        foreach ($taxonomies as $tax) {
+            if ($tax->name === 'post_format') {
+                continue;
+            }
+            $result[] = ['name' => $tax->name, 'label' => $tax->labels->singular_name];
+        }
+        return $result;
     }
 
     public function plugin_action_links(array $links): array

@@ -340,7 +340,7 @@ $pages = get_pages(['number' => 100]);
                     <option value="page">📄 Page WordPress</option>
                     <option value="archive">📚 Archive</option>
                     <option value="taxonomy">🏷️ Taxonomie</option>
-                    <option value="custom">🔧 Personnalisé</option>
+                    <option value="dynamic_cpt">🔗 CPT dynamique</option>
                 </select>
             </div>
 
@@ -371,6 +371,24 @@ $pages = get_pages(['number' => 100]);
                         <option value="<?php echo esc_attr($tax->name); ?>"><?php echo esc_html($tax->labels->singular_name); ?></option>
                     <?php endforeach; ?>
                 </select>
+
+                <div class="segment-dynamic-cpt" style="display:none;">
+                    <div class="dyn-cpt-target">
+                        <label class="dyn-label-inline">CPT cible :</label>
+                        <select class="segment-dyn-cpt widefat">
+                            <option value="">— Sélectionner un CPT cible —</option>
+                        </select>
+                    </div>
+                    <div class="dyn-cpt-conditions">
+                        <label class="dyn-label-inline">Conditions <em>(logique ET — toutes doivent être vraies)</em> :</label>
+                        <div class="dyn-conditions-list"></div>
+                        <button type="button" class="button dyn-add-condition">+ Ajouter une condition</button>
+                        <p class="description">
+                            Chaque condition lie la taxonomie du post courant à celle du CPT cible.<br>
+                            Exemple : terme courant dans <em>secteur</em> = terme du CPT cible dans <em>secteur</em>
+                        </p>
+                    </div>
+                </div>
             </div>
 
             <div class="cb-segment-label">

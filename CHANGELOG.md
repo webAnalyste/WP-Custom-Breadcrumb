@@ -5,6 +5,14 @@ Toutes les modifications notables de ce projet seront documentées dans ce fichi
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet adhère au [Versioning Sémantique](https://semver.org/lang/fr/).
 
+## [2.1.16] - 2026-04-10
+
+### Ajouté
+- Onglet **Sauvegarde** dans l'admin : export JSON, import JSON, bouton reset
+- Option **Conserver les réglages lors de la désinstallation** dans les réglages globaux
+- `uninstall.php` respecte cette option avant d'effacer les données
+- Nouvel endpoint AJAX `custom_breadcrumb_reset` pour réinitialiser sans désinstaller
+
 ## [2.1.15] - 2026-04-10
 
 ### Ajouté

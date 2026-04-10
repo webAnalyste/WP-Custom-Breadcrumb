@@ -12,9 +12,17 @@ if (is_multisite()) {
 
     foreach ($site_ids as $site_id) {
         switch_to_blog((int) $site_id);
-        delete_option('custom_breadcrumb_settings');
+        $settings = get_option('custom_breadcrumb_settings', []);
+        $keep = !empty($settings['global']['keep_settings_on_uninstall']);
+        if (!$keep) {
+            delete_option('custom_breadcrumb_settings');
+        }
         restore_current_blog();
     }
 } else {
-    delete_option('custom_breadcrumb_settings');
+    $settings = get_option('custom_breadcrumb_settings', []);
+    $keep = !empty($settings['global']['keep_settings_on_uninstall']);
+    if (!$keep) {
+        delete_option('custom_breadcrumb_settings');
+    }
 }

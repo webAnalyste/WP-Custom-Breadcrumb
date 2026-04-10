@@ -620,3 +620,71 @@
     padding: 3px 10px !important;
     height: auto !important;
 }
+
+/* ONGLET SAUVEGARDE */
+.cb-backup-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    margin-top: 16px;
+}
+
+.cb-backup-block {
+    background: #f9f9f9;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 24px;
+}
+
+.cb-backup-block h3 {
+    margin-top: 0;
+    font-size: 15px;
+}
+
+.cb-backup-block p {
+    color: #555;
+    font-size: 13px;
+}
+
+.cb-backup-danger {
+    grid-column: 1 / -1;
+    background: #fff5f5;
+    border-color: #f5a6a6;
+}
+
+.cb-backup-danger h3 {
+    color: #b91c1c;
+}
+
+.cb-btn-danger {
+    background: #dc2626 !important;
+    border-color: #b91c1c !important;
+    color: #fff !important;
+}
+
+.cb-btn-danger:hover {
+    background: #b91c1c !important;
+}
+
+.cb-import-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+.cb-import-filename {
+    font-size: 12px;
+    color: #666;
+    font-style: italic;
+}
+
+@media (max-width: 768px) {
+    .cb-backup-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .cb-backup-danger {
+        grid-column: 1;
+    }
+}

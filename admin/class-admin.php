@@ -18,6 +18,7 @@ class Custom_Breadcrumb_Admin
         add_action('admin_menu', [$this, 'register_menu']);
         add_action('admin_enqueue_scripts', [$this, 'enqueue_assets']);
         add_action('wp_ajax_custom_breadcrumb_save', [$this, 'ajax_save']);
+        add_action('wp_ajax_custom_breadcrumb_reset', [$this, 'ajax_reset']);
         add_filter('plugin_row_meta', [$this, 'plugin_row_meta'], 10, 2);
         add_filter('plugin_action_links_' . plugin_basename(CUSTOM_BREADCRUMB_FILE), [$this, 'plugin_action_links']);
     }
@@ -88,6 +89,19 @@ class Custom_Breadcrumb_Admin
         } else {
             wp_send_json_error(['message' => 'Erreur lors de l\'enregistrement']);
         }
+    }
+
+    public function ajax_reset(): void
+    {
+        check_ajax_referer('custom_breadcrumb_save', 'nonce');
+
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(['message' => 'Permission refusée']);
+            return;
+        }
+
+        delete_option('custom_breadcrumb_settings');
+        wp_send_json_success(['message' => 'Configuration supprimée']);
     }
 
     private function get_public_post_types(): array

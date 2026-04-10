@@ -435,7 +435,8 @@
                 separator: $('#separator').val(),
                 enable_jsonld: $('#enable-jsonld').is(':checked'),
                 insert_position: $('#insert-position').val(),
-                alignment: $('#alignment').val()
+                alignment: $('#alignment').val(),
+                keep_settings_on_uninstall: $('#keep-settings-on-uninstall').is(':checked')
             }
         };
 
@@ -471,5 +472,126 @@
         const context = $('#preview-context').val();
         // TODO: Implémenter la génération d'aperçu selon les règles
     }
+
+    // ── EXPORT ──────────────────────────────────────────────────────────────
+    $('#export-settings').on('click', function () {
+        const settings = {
+            rules: rules,
+            global: {
+                home_label: $('#home-label').val(),
+                separator: $('#separator').val(),
+                enable_jsonld: $('#enable-jsonld').is(':checked'),
+                insert_position: $('#insert-position').val(),
+                alignment: $('#alignment').val(),
+                keep_settings_on_uninstall: $('#keep-settings-on-uninstall').is(':checked')
+            }
+        };
+
+        const json = JSON.stringify(settings, null, 2);
+        const blob = new Blob([json], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const date = new Date().toISOString().slice(0, 10);
+
+        const $a = $('<a>')
+            .attr('href', url)
+            .attr('download', `custom-breadcrumb-${date}.json`)
+            .appendTo('body');
+        $a[0].click();
+        $a.remove();
+        URL.revokeObjectURL(url);
+    });
+
+    // ── IMPORT ──────────────────────────────────────────────────────────────
+    let importData = null;
+
+    $('#import-pick').on('click', function () {
+        $('#import-file').trigger('click');
+    });
+
+    $('#import-file').on('change', function () {
+        const file = this.files[0];
+        if (!file) return;
+
+        $('#import-filename').text(file.name);
+        $('#import-settings').prop('disabled', true);
+        importData = null;
+
+        const reader = new FileReader();
+        reader.onload = function (e) {
+            try {
+                const parsed = JSON.parse(e.target.result);
+                if (!parsed || typeof parsed !== 'object') throw new Error('Format invalide');
+                importData = parsed;
+                $('#import-settings').prop('disabled', false);
+            } catch (err) {
+                $('#import-filename').text('❌ Fichier invalide : ' + err.message);
+            }
+        };
+        reader.readAsText(file);
+    });
+
+    $('#import-settings').on('click', function () {
+        if (!importData) return;
+
+        if (!confirm('Importer cette configuration ? La configuration actuelle sera remplacée.')) return;
+
+        const $btn = $(this);
+        $btn.prop('disabled', true).text('Importation…');
+
+        $.ajax({
+            url: customBreadcrumb.ajaxUrl,
+            type: 'POST',
+            data: {
+                action: 'custom_breadcrumb_save',
+                nonce: customBreadcrumb.nonce,
+                settings: JSON.stringify(importData)
+            },
+            success: function (response) {
+                if (response.success) {
+                    window.location.reload();
+                } else {
+                    alert('❌ Erreur : ' + (response.data.message || 'Erreur inconnue'));
+                    $btn.prop('disabled', false).text('📤 Importer et enregistrer');
+                }
+            },
+            error: function () {
+                alert('❌ Erreur de connexion');
+                $btn.prop('disabled', false).text('📤 Importer et enregistrer');
+            }
+        });
+    });
+
+    // ── RESET ────────────────────────────────────────────────────────────────
+    $('#reset-settings').on('click', function () {
+        if (!confirm('Supprimer définitivement toutes les règles et réglages ?\n\nCette action est irréversible. Exportez d\'abord si nécessaire.')) return;
+        if (!confirm('Êtes-vous certain ? Toute la configuration sera effacée.')) return;
+
+        const $btn = $(this);
+        const $status = $('#reset-status');
+
+        $btn.prop('disabled', true).text('Suppression…');
+
+        $.ajax({
+            url: customBreadcrumb.ajaxUrl,
+            type: 'POST',
+            data: {
+                action: 'custom_breadcrumb_reset',
+                nonce: customBreadcrumb.nonce
+            },
+            success: function (response) {
+                if (response.success) {
+                    $status.text('✅ Configuration effacée. Rechargement…').addClass('success');
+                    setTimeout(function () { window.location.reload(); }, 1500);
+                } else {
+                    $status.text('❌ Erreur').addClass('error');
+                    $btn.prop('disabled', false).text('🗑️ Tout réinitialiser');
+                }
+            },
+            error: function () {
+                $status.text('❌ Erreur de connexion').addClass('error');
+                $btn.prop('disabled', false).text('🗑️ Tout réinitialiser');
+            }
+        });
+    });
 
 })(jQuery);

@@ -12,6 +12,7 @@ $pages = get_pages(['number' => 100]);
     <div class="cb-tabs">
         <button class="cb-tab active" data-tab="rules">📋 Règles de breadcrumb</button>
         <button class="cb-tab" data-tab="global">⚙️ Réglages globaux</button>
+        <button class="cb-tab" data-tab="backup">💾 Sauvegarde</button>
         <button class="cb-tab" data-tab="preview">👁️ Aperçu</button>
         <button class="cb-tab" data-tab="code">💻 Intégration</button>
     </div>
@@ -96,6 +97,17 @@ $pages = get_pages(['number' => 100]);
                 </tr>
 
                 <tr>
+                    <th>Conserver les réglages</th>
+                    <td>
+                        <label>
+                            <input type="checkbox" id="keep-settings-on-uninstall" <?php checked($settings['global']['keep_settings_on_uninstall'] ?? false); ?>>
+                            Ne pas effacer les réglages lors de la désinstallation du plugin
+                        </label>
+                        <p class="description">Par défaut, supprimer le plugin efface toute la configuration. Cochez cette option pour la conserver.</p>
+                    </td>
+                </tr>
+
+                <tr>
                     <th>Alignement</th>
                     <td>
                         <select id="alignment">
@@ -107,6 +119,44 @@ $pages = get_pages(['number' => 100]);
                     </td>
                 </tr>
             </table>
+        </div>
+    </div>
+
+    <!-- ONGLET SAUVEGARDE -->
+    <div class="cb-tab-content" data-content="backup">
+        <div class="cb-settings-section">
+            <h2>💾 Sauvegarde & Restauration</h2>
+            <p>Exportez votre configuration pour la sauvegarder ou la transférer sur un autre site.</p>
+
+            <div class="cb-backup-grid">
+
+                <div class="cb-backup-block">
+                    <h3>📥 Exporter la configuration</h3>
+                    <p>Télécharge un fichier <code>.json</code> contenant toutes vos règles et réglages globaux.</p>
+                    <button class="button button-primary" id="export-settings">📥 Télécharger la configuration</button>
+                </div>
+
+                <div class="cb-backup-block">
+                    <h3>📤 Importer une configuration</h3>
+                    <p>Restaure une configuration depuis un fichier <code>.json</code> exporté précédemment.<br>
+                    <strong>Attention :</strong> cela remplace intégralement la configuration actuelle.</p>
+                    <div class="cb-import-row">
+                        <input type="file" id="import-file" accept=".json" style="display:none;">
+                        <button class="button" id="import-pick">📂 Choisir un fichier…</button>
+                        <span id="import-filename" class="cb-import-filename">Aucun fichier sélectionné</span>
+                    </div>
+                    <button class="button button-primary" id="import-settings" disabled>📤 Importer et enregistrer</button>
+                </div>
+
+                <div class="cb-backup-block cb-backup-danger">
+                    <h3>⚠️ Zone de danger</h3>
+                    <p>Supprime définitivement toutes les règles et réglages de la base de données WordPress.<br>
+                    Cette action est <strong>irréversible</strong> — exportez d'abord si nécessaire.</p>
+                    <button class="button cb-btn-danger" id="reset-settings">🗑️ Tout réinitialiser</button>
+                    <span id="reset-status" class="cb-save-status"></span>
+                </div>
+
+            </div>
         </div>
     </div>
 

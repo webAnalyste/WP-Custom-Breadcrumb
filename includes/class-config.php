@@ -46,6 +46,7 @@ class Custom_Breadcrumb_Config
                 'enable_jsonld' => true,
                 'insert_position' => 'disabled',
                 'alignment' => 'left',
+                'keep_settings_on_uninstall' => false,
             ],
         ];
     }

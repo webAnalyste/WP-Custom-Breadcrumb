@@ -60,6 +60,7 @@
         const showPage   = condType === 'page_level';
         const showLvl    = condType === 'tax_level_compare';
         const srcHier    = isTaxHierarchical(data.source_tax || '');
+        const isExact    = (data.match_mode || 'exact') === 'exact';
         const srcDepth   = (data.source_depth !== undefined && data.source_depth !== null) ? data.source_depth : '';
 
         const $row = $(`
@@ -73,10 +74,10 @@
                 <span class="dyn-cond-tax-match"${showMatch ? '' : ' style="display:none"'}>
                     <span class="dyn-cond-label">Post courant dans</span>
                     <select class="dyn-source-tax">${buildTaxonomyOptions(data.source_tax || '')}</select>
-                    <span class="dyn-source-depth-wrap"${srcHier ? '' : ' style="display:none"'}>
-                        niv.&nbsp;<input type="number" class="dyn-source-depth small-text" min="0" max="20" placeholder="auto" value="${esc(String(srcDepth))}">
+                    <span class="dyn-source-depth-wrap"${(srcHier && isExact) ? '' : ' style="display:none"'}>
+                        niv.&nbsp;<input type="number" class="dyn-source-depth small-text" min="0" max="20" placeholder="auto" value="${esc(String(srcDepth))}" title="Niveau ancêtre à utiliser : 0 = terme racine, 1 = 2ᵉ niveau, etc. Laisser vide = terme le plus spécifique du post courant">
                     </span>
-                    <select class="dyn-match-mode">
+                    <select class="dyn-match-mode" title="Exact : le post cible doit avoir LE MÊME terme. Ancêtre : le post cible doit avoir un terme PARENT du terme du post courant (utile si la taxonomie a des termes parent/enfant et que la cible est à un niveau supérieur).">
                         <option value="exact"${(data.match_mode || 'exact') === 'exact' ? ' selected' : ''}>= terme identique</option>
                         <option value="ancestors"${data.match_mode === 'ancestors' ? ' selected' : ''}>= terme ancêtre du post courant</option>
                     </select>
@@ -92,11 +93,12 @@
                 </span>
 
                 <span class="dyn-cond-tax-level-compare"${showLvl ? '' : ' style="display:none"'}>
-                    <span class="dyn-cond-label">Profondeur taxo</span>
-                    <select class="dyn-tlc-tax">${buildTaxonomyOptions(data.taxonomy || '')}</select>
+                    <span class="dyn-cond-label">Valeur taxo</span>
+                    <select class="dyn-tlc-tax" title="Taxonomie utilisée pour comparer les niveaux. Pour une taxo hiérarchique (parent/enfant WP), compare la profondeur. Pour une taxo plate avec des termes nommés 'level 1', 'level 2'… compare le numéro extrait du nom.">${buildTaxonomyOptions(data.taxonomy || '')}</select>
                     <span class="dyn-cond-label">du post courant</span>
                     <select class="dyn-tlc-op">${buildOperatorOptions(data.operator || '=')}</select>
-                    <span class="dyn-cond-label">profondeur du post cible</span>
+                    <span class="dyn-cond-label">valeur du post cible</span>
+                    <span class="description" title="Fonctionne avec les taxonomies hiérarchiques (profondeur) ET les taxonomies plates dont les termes contiennent un numéro : 'level 1', 'niveau-2', '3'…">ℹ️</span>
                 </span>
 
                 <button type="button" class="button-link dyn-remove-condition" title="Supprimer cette condition">🗑️</button>
@@ -165,11 +167,21 @@
         // Changer la taxo source → afficher/masquer le sélecteur de niveau
         $(document).on('change', '.dyn-source-tax', function () {
             const $row = $(this).closest('.dyn-condition');
-            const taxName = $(this).val();
-            $row.find('.dyn-source-depth-wrap').toggle(isTaxHierarchical(taxName));
-            if (!isTaxHierarchical(taxName)) {
-                $row.find('.dyn-source-depth').val('');
-            }
+            const taxName   = $(this).val();
+            const isExact   = $row.find('.dyn-match-mode').val() !== 'ancestors';
+            const showDepth = isExact && isTaxHierarchical(taxName);
+            $row.find('.dyn-source-depth-wrap').toggle(showDepth);
+            if (!showDepth) $row.find('.dyn-source-depth').val('');
+        });
+
+        // Changer le mode de correspondance → afficher/masquer le sélecteur de niveau
+        $(document).on('change', '.dyn-match-mode', function () {
+            const $row    = $(this).closest('.dyn-condition');
+            const isExact = $(this).val() !== 'ancestors';
+            const taxName = $row.find('.dyn-source-tax').val();
+            const showDepth = isExact && isTaxHierarchical(taxName);
+            $row.find('.dyn-source-depth-wrap').toggle(showDepth);
+            if (!showDepth) $row.find('.dyn-source-depth').val('');
         });
 
         // Actions segments

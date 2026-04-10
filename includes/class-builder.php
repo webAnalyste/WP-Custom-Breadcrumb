@@ -396,36 +396,76 @@ class Custom_Breadcrumb_Builder
                 }
 
                 // ── Filtres post-query (tax_level_compare) ──
+                $candidates = $query->posts;
+
+                if (!empty($post_filters)) {
+                    // Pré-calcul de la valeur du post courant pour chaque filtre
+                    $level_info = [];
+                    foreach ($post_filters as $filter) {
+                        if ($filter['type'] !== 'tax_level_compare') continue;
+                        $tax = $filter['taxonomy'] ?? '';
+                        $op  = $filter['operator']  ?? '=';
+                        if (empty($tax)) continue;
+                        $cur_terms = get_the_terms($post->ID, $tax);
+                        if (empty($cur_terms) || is_wp_error($cur_terms)) continue;
+                        $level_info[] = [
+                            'tax'         => $tax,
+                            'op'          => $op,
+                            'current_val' => $this->get_term_comparison_value(
+                                $this->get_deepest_term($cur_terms)
+                            ),
+                        ];
+                    }
+
+                    // Trier les candidats pour retourner le "plus proche" en premier.
+                    // Pour > / >= : ordre décroissant (valeur max en dessous du courant d'abord).
+                    // Pour < / <= : ordre croissant (valeur min au-dessus du courant d'abord).
+                    if (!empty($level_info)) {
+                        usort($candidates, function ($a, $b) use ($level_info) {
+                            foreach ($level_info as $info) {
+                                $a_terms = get_the_terms($a->ID, $info['tax']);
+                                $b_terms = get_the_terms($b->ID, $info['tax']);
+                                $a_val   = (!empty($a_terms) && !is_wp_error($a_terms))
+                                    ? $this->get_term_comparison_value($this->get_deepest_term($a_terms))
+                                    : 0;
+                                $b_val   = (!empty($b_terms) && !is_wp_error($b_terms))
+                                    ? $this->get_term_comparison_value($this->get_deepest_term($b_terms))
+                                    : 0;
+                                $desc = in_array($info['op'], ['>', '>='], true);
+                                $diff = $desc ? ($b_val - $a_val) : ($a_val - $b_val);
+                                if ($diff !== 0) return $diff;
+                            }
+                            return 0;
+                        });
+                    }
+                }
+
                 $found = null;
-                foreach ($query->posts as $candidate) {
+                foreach ($candidates as $candidate) {
                     $candidate_ok = true;
                     foreach ($post_filters as $filter) {
-                        if ($filter['type'] !== 'tax_level_compare') {
-                            continue;
-                        }
+                        if ($filter['type'] !== 'tax_level_compare') continue;
                         $taxonomy = $filter['taxonomy'] ?? '';
                         $operator = $filter['operator'] ?? '=';
-                        if (empty($taxonomy)) {
-                            continue;
-                        }
+                        if (empty($taxonomy)) continue;
 
                         $current_terms = get_the_terms($post->ID, $taxonomy);
                         $target_terms  = get_the_terms($candidate->ID, $taxonomy);
 
                         if (empty($current_terms) || is_wp_error($current_terms) ||
-                            empty($target_terms)  || is_wp_error($target_terms)) {
+                            empty($target_terms)   || is_wp_error($target_terms)) {
                             $candidate_ok = false;
                             break;
                         }
 
-                        $current_depth = count(get_ancestors(
-                            $this->get_deepest_term($current_terms)->term_id, $taxonomy
-                        ));
-                        $target_depth  = count(get_ancestors(
-                            $this->get_deepest_term($target_terms)->term_id, $taxonomy
-                        ));
+                        $current_val = $this->get_term_comparison_value(
+                            $this->get_deepest_term($current_terms)
+                        );
+                        $target_val  = $this->get_term_comparison_value(
+                            $this->get_deepest_term($target_terms)
+                        );
 
-                        if (!$this->compare_values($current_depth, $operator, $target_depth)) {
+                        if (!$this->compare_values($current_val, $operator, $target_val)) {
                             $candidate_ok = false;
                             break;
                         }
@@ -752,6 +792,29 @@ class Custom_Breadcrumb_Builder
 
         // Niveau demandé plus profond que le terme courant : retourner les termes tels quels
         return $terms;
+    }
+
+    /**
+     * Retourne la valeur numérique d'un terme pour les comparaisons tax_level_compare.
+     *
+     * - Taxonomie hiérarchique : profondeur (nb d'ancêtres). "level 2" enfant de "level 1" → 1.
+     * - Taxonomie plate avec noms/slugs numériques (ex. "level 3", "niveau-2") :
+     *   extrait le premier entier trouvé dans le nom puis le slug.
+     * - Sinon : 0.
+     */
+    private function get_term_comparison_value(\WP_Term $term): int
+    {
+        $depth = count(get_ancestors($term->term_id, $term->taxonomy));
+        if ($depth > 0) {
+            return $depth; // taxonomie hiérarchique
+        }
+        // Taxonomie plate : extraire un entier du nom ou du slug
+        foreach ([$term->name, $term->slug] as $str) {
+            if (preg_match('/(\d+)/', $str, $m)) {
+                return intval($m[1]);
+            }
+        }
+        return 0;
     }
 
     /**

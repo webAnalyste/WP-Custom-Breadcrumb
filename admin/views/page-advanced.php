@@ -432,9 +432,9 @@ $pages = get_pages(['number' => 100]);
                     <div class="dyn-chain-option">
                         <label>
                             <input type="checkbox" class="segment-dyn-chain">
-                            🔗 <strong>Chercher depuis le segment suivant</strong>
-                            <span class="description"> — ce segment requêtera depuis le post trouvé par le segment Personnalisé qui le suit, et non depuis la page courante. À activer sur le segment le plus externe quand vous empilez plusieurs segments Personnalisé.</span>
+                            🔗 Chercher depuis le segment suivant
                         </label>
+                        <span class="dyn-chain-hint">Activer sur le segment externe quand deux Personnalisé sont empilés</span>
                     </div>
                     <div class="dyn-cpt-conditions">
                         <label class="dyn-label-inline">Conditions <em>(logique ET — toutes doivent être vraies)</em> :</label>

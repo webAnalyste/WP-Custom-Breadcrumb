@@ -558,6 +558,32 @@
     gap: 8px;
 }
 
+.dyn-chain-option {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 12px;
+    background: #fffbeb;
+    border: 1px solid #f59e0b;
+    border-radius: 4px;
+}
+.dyn-chain-option label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 600;
+    color: #78350f;
+    margin: 0;
+}
+.dyn-chain-hint {
+    font-size: 11px;
+    font-weight: 400;
+    color: #92400e;
+    font-style: italic;
+}
+
 .dyn-label-inline {
     font-size: 12px;
     font-weight: 600;

@@ -5,6 +5,11 @@ Toutes les modifications notables de ce projet seront documentées dans ce fichi
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet adhère au [Versioning Sémantique](https://semver.org/lang/fr/).
 
+## [2.1.31] - 2026-04-11
+
+### Corrigé
+- ux: option 🔗 chaîne illisible — ajout du CSS manquant (fond ambré, texte brun, bordure) + description raccourcie à une ligne
+
 ## [2.1.30] - 2026-04-11
 
 ### Ajouté

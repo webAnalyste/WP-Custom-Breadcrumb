@@ -3,7 +3,7 @@
  * Plugin Name: Custom Breadcrumb
  * Plugin URI: https://github.com/webAnalyste/WP-Custom-Breadcrumb
  * Description: Personnalisez vos fils d'Ariane en quelques clics
- * Version: 2.1.26
+ * Version: 2.1.27
  * Requires at least: 6.4
  * Requires PHP: 7.4
  * Author: webAnalyste

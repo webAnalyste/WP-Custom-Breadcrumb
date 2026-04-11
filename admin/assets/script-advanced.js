@@ -13,6 +13,78 @@
         return $('<span>').text(str).html();
     }
 
+    // ── Aide contextuelle par condition ─────────────────────────────────────
+    function updateConditionHelp($row) {
+        const condType = $row.find('.dyn-cond-type').val();
+        const $help    = $row.find('.dyn-cond-help');
+        let html = '';
+
+        if (condType === 'tax_match') {
+            const srcTax = $row.find('.dyn-source-tax').val();
+            const tgtTax = $row.find('.dyn-target-tax').val();
+            const mode   = $row.find('.dyn-match-mode').val() || 'exact';
+
+            const modeInfo = {
+                'exact': {
+                    icon: '🎯',
+                    text: 'La cible doit avoir <strong>exactement le même terme</strong> que le post courant. Trouve des posts au même niveau de spécificité (même catégorie, même branche).'
+                },
+                'ancestors': {
+                    icon: '⬆️',
+                    text: 'La cible doit avoir un terme <strong>parent</strong> du terme le plus profond du post courant. Trouve des posts plus généraux. Si le terme courant n\'a pas d\'ancêtre, aucun candidat n\'est trouvé.'
+                },
+                'ancestors_or_equal': {
+                    icon: '⭐',
+                    text: 'Combine les deux modes : terme exact <strong>et</strong> termes parents sont tous candidats. À combiner avec <em>Comparer profondeurs taxo</em> qui retient ensuite le candidat le plus proche. Recommandé pour remonter une hiérarchie.'
+                }
+            };
+
+            const m = modeInfo[mode] || modeInfo['exact'];
+
+            let warnHtml = '';
+            if (srcTax && tgtTax && srcTax !== tgtTax) {
+                warnHtml = `<p class="dyn-help-warn">⚠️ <strong>Taxonomies différentes :</strong> <code>${esc(srcTax)}</code> ≠ <code>${esc(tgtTax)}</code>. Chaque taxonomie a ses propres term_id — la correspondance sera incorrecte. Utilisez <strong>la même taxonomie</strong> des deux côtés, ou vérifiez que les deux CPT partagent bien cette taxonomie.</p>`;
+            }
+
+            html = `<div class="dyn-help-header"><span class="dyn-help-role dyn-help-role-query">🔍 QUERY</span><span class="dyn-help-subtitle">Définit <em>quels</em> posts rechercher</span></div>
+                    <p class="dyn-help-body">${m.icon} ${m.text}</p>
+                    ${warnHtml}
+                    <p class="dyn-help-tip">Au moins une condition de ce type est requise par segment — sans elle, aucune recherche n'est lancée.</p>`;
+
+        } else if (condType === 'tax_level_compare') {
+            const tax = $row.find('.dyn-tlc-tax').val();
+            const op  = $row.find('.dyn-tlc-op').val() || '=';
+
+            const opInfo = {
+                '>':  'Courant <strong>plus profond</strong> que la cible — trouve des posts à un niveau <em>moins spécifique</em>.<br><small>Ex : page_level courant = 3, post cible retenu = level 1 ou 2.</small>',
+                '>=': 'Courant <strong>plus profond ou au même niveau</strong> que la cible.',
+                '<':  'Courant <strong>moins profond</strong> que la cible — trouve des posts <em>plus spécifiques</em> que le post courant.',
+                '<=': 'Courant <strong>moins profond ou au même niveau</strong> que la cible.',
+                '=':  'Courant et cible au <strong>même niveau</strong>.<br><small>Utile pour restreindre à un seul niveau et éviter les doublons dans un breadcrumb multi-segments.</small>'
+            };
+
+            let taxNote = '';
+            if (tax) {
+                const isHier = isTaxHierarchical(tax);
+                taxNote = isHier
+                    ? `<p class="dyn-help-tip">📐 <code>${esc(tax)}</code> est <strong>hiérarchique</strong> → valeur = profondeur WP : 0 = terme racine, 1 = enfant direct, 2 = petit-enfant…</p>`
+                    : `<p class="dyn-help-tip">📐 <code>${esc(tax)}</code> est <strong>plate</strong> → valeur extraite du nom du terme : "level 3" → 3, "niveau-2" → 2, "1" → 1…</p>`;
+            }
+
+            html = `<div class="dyn-help-header"><span class="dyn-help-role dyn-help-role-filter">🔎 FILTRE</span><span class="dyn-help-subtitle">Garde uniquement les candidats où la comparaison est vraie</span></div>
+                    <p class="dyn-help-body">Opérateur <strong>${esc(op)}</strong> — ${opInfo[op] || ''}</p>
+                    ${taxNote}
+                    <p class="dyn-help-tip">Appliqué <em>après</em> la WP_Query. Nécessite au moins une condition <em>Même terme</em> dans le même segment.</p>`;
+
+        } else if (condType === 'page_level') {
+            html = `<div class="dyn-help-header"><span class="dyn-help-role dyn-help-role-guard">🚦 GARDE</span><span class="dyn-help-subtitle">Décide si le segment s'exécute ou non</span></div>
+                    <p class="dyn-help-body">Si la condition est <strong>fausse</strong>, le segment entier est ignoré — aucune WP_Query n'est lancée, aucun item n'est ajouté au breadcrumb.</p>
+                    <p class="dyn-help-tip">⚠️ Utilise la hiérarchie <strong>WordPress post_parent</strong> (pas une taxonomie). Pour les CPT sans hiérarchie WP parent/enfant, la profondeur est toujours 0.</p>`;
+        }
+
+        $help.html(html);
+    }
+
     function buildCptOptions(selectedValue) {
         const types = (typeof customBreadcrumb !== 'undefined' && customBreadcrumb.postTypes) ? customBreadcrumb.postTypes : [];
         let html = '<option value="">— Sélectionner un CPT cible —</option>';
@@ -65,47 +137,50 @@
 
         const $row = $(`
             <div class="dyn-condition">
-                <select class="dyn-cond-type">
-                    <option value="tax_match"${showMatch ? ' selected' : ''}>Même terme (taxo)</option>
-                    <option value="page_level"${showPage ? ' selected' : ''}>Niveau de page</option>
-                    <option value="tax_level_compare"${showLvl ? ' selected' : ''}>Comparer profondeurs taxo</option>
-                </select>
-
-                <span class="dyn-cond-tax-match"${showMatch ? '' : ' style="display:none"'}>
-                    <span class="dyn-cond-label">Post courant dans</span>
-                    <select class="dyn-source-tax">${buildTaxonomyOptions(data.source_tax || '')}</select>
-                    <span class="dyn-source-depth-wrap"${(srcHier && isExact) ? '' : ' style="display:none"'}>
-                        niv.&nbsp;<input type="number" class="dyn-source-depth small-text" min="0" max="20" placeholder="auto" value="${esc(String(srcDepth))}" title="Niveau ancêtre à utiliser : 0 = terme racine, 1 = 2ᵉ niveau, etc. Laisser vide = terme le plus spécifique du post courant">
-                    </span>
-                    <select class="dyn-match-mode" title="Identique : le CPT cible doit avoir exactement le même terme (ex : même catégorie solution). Ancêtre : le CPT cible doit avoir un terme PARENT du terme courant (ex : courant = Web Analytics → cible doit avoir Data Analytics). Identique OU ancêtre : combine les deux — recommandé avec tax_level_compare pour naviguer vers le niveau supérieur le plus proche quelle que soit la profondeur (ex : courant = Web Analytics niveau 3 → candidats : agence Web Analytics niveau 2 ET agence Data Analytics niveau 1 → tax_level_compare retient le plus proche).">
-                        <option value="exact"${(data.match_mode || 'exact') === 'exact' ? ' selected' : ''}>= terme identique</option>
-                        <option value="ancestors"${data.match_mode === 'ancestors' ? ' selected' : ''}>= terme ancêtre du post courant</option>
-                        <option value="ancestors_or_equal"${data.match_mode === 'ancestors_or_equal' ? ' selected' : ''}>= terme identique OU ancêtre ⭐</option>
+                <div class="dyn-condition-inputs">
+                    <select class="dyn-cond-type">
+                        <option value="tax_match"${showMatch ? ' selected' : ''}>Même terme (taxo)</option>
+                        <option value="page_level"${showPage ? ' selected' : ''}>Niveau de page</option>
+                        <option value="tax_level_compare"${showLvl ? ' selected' : ''}>Comparer profondeurs taxo</option>
                     </select>
-                    <span class="dyn-cond-label">CPT cible dans</span>
-                    <select class="dyn-target-tax">${buildTaxonomyOptions(data.target_tax || '')}</select>
-                </span>
 
-                <span class="dyn-cond-page-level"${showPage ? '' : ' style="display:none"'}>
-                    <span class="dyn-cond-label">Profondeur page courante</span>
-                    <select class="dyn-page-op">${buildOperatorOptions(data.operator || '=')}</select>
-                    <input type="number" class="dyn-page-level-val small-text" min="0" max="20" value="${data.value !== undefined ? esc(String(data.value)) : '0'}">
-                    <span class="description">(0&nbsp;= page racine)</span>
-                </span>
+                    <span class="dyn-cond-tax-match"${showMatch ? '' : ' style="display:none"'}>
+                        <span class="dyn-cond-label">Post courant dans</span>
+                        <select class="dyn-source-tax">${buildTaxonomyOptions(data.source_tax || '')}</select>
+                        <span class="dyn-source-depth-wrap"${(srcHier && isExact) ? '' : ' style="display:none"'}>
+                            niv.&nbsp;<input type="number" class="dyn-source-depth small-text" min="0" max="20" placeholder="auto" value="${esc(String(srcDepth))}" title="Niveau ancêtre : 0 = terme racine, 1 = 2ᵉ niveau… Vide = terme le plus spécifique">
+                        </span>
+                        <select class="dyn-match-mode">
+                            <option value="exact"${(data.match_mode || 'exact') === 'exact' ? ' selected' : ''}>= terme identique</option>
+                            <option value="ancestors"${data.match_mode === 'ancestors' ? ' selected' : ''}>= terme ancêtre du post courant</option>
+                            <option value="ancestors_or_equal"${data.match_mode === 'ancestors_or_equal' ? ' selected' : ''}>= terme identique OU ancêtre ⭐</option>
+                        </select>
+                        <span class="dyn-cond-label">CPT cible dans</span>
+                        <select class="dyn-target-tax">${buildTaxonomyOptions(data.target_tax || '')}</select>
+                    </span>
 
-                <span class="dyn-cond-tax-level-compare"${showLvl ? '' : ' style="display:none"'}>
-                    <span class="dyn-cond-label">Valeur taxo</span>
-                    <select class="dyn-tlc-tax" title="Taxonomie utilisée pour comparer les niveaux. &#10;• Taxo hiérarchique (parent/enfant WP) : compare la profondeur (0 = racine, 1 = enfant direct…). &#10;• Taxo plate avec termes numériques ('1', '2', 'level 3', 'niveau-2'…) : extrait le numéro du nom du terme. &#10;Exemple : page_level = '3' → valeur 3 ; 'Web Analytics' est enfant de 'Data Analytics' → profondeur 1.">${buildTaxonomyOptions(data.taxonomy || '')}</select>
-                    <span class="dyn-cond-label">du post courant</span>
-                    <select class="dyn-tlc-op">${buildOperatorOptions(data.operator || '=')}</select>
-                    <span class="dyn-cond-label">valeur du post cible</span>
-                    <span class="description" title="Exemple : post courant a page_level='3' (valeur 3), opérateur '>', post cible a page_level='2' (valeur 2) → 3 > 2 ✓ → candidat retenu. &#10;Combiné avec '= terme identique OU ancêtre', retient l'agence au niveau immédiatement supérieur.">ℹ️</span>
-                </span>
+                    <span class="dyn-cond-page-level"${showPage ? '' : ' style="display:none"'}>
+                        <span class="dyn-cond-label">Profondeur page courante</span>
+                        <select class="dyn-page-op">${buildOperatorOptions(data.operator || '=')}</select>
+                        <input type="number" class="dyn-page-level-val small-text" min="0" max="20" value="${data.value !== undefined ? esc(String(data.value)) : '0'}">
+                        <span class="description">(0&nbsp;= page racine)</span>
+                    </span>
 
-                <button type="button" class="button-link dyn-remove-condition" title="Supprimer cette condition">🗑️</button>
+                    <span class="dyn-cond-tax-level-compare"${showLvl ? '' : ' style="display:none"'}>
+                        <span class="dyn-cond-label">Valeur taxo</span>
+                        <select class="dyn-tlc-tax">${buildTaxonomyOptions(data.taxonomy || '')}</select>
+                        <span class="dyn-cond-label">du post courant</span>
+                        <select class="dyn-tlc-op">${buildOperatorOptions(data.operator || '=')}</select>
+                        <span class="dyn-cond-label">valeur du post cible</span>
+                    </span>
+
+                    <button type="button" class="button-link dyn-remove-condition" title="Supprimer cette condition">🗑️</button>
+                </div>
+                <div class="dyn-cond-help"></div>
             </div>
         `);
         $container.append($row);
+        updateConditionHelp($row);
     }
 
     $(document).ready(function () {
@@ -163,26 +238,34 @@
             $row.find('.dyn-cond-tax-match').toggle(type === 'tax_match');
             $row.find('.dyn-cond-page-level').toggle(type === 'page_level');
             $row.find('.dyn-cond-tax-level-compare').toggle(type === 'tax_level_compare');
+            updateConditionHelp($row);
         });
 
         // Changer la taxo source → afficher/masquer le sélecteur de niveau
         $(document).on('change', '.dyn-source-tax', function () {
-            const $row = $(this).closest('.dyn-condition');
-            const taxName   = $(this).val();
-            const isExact   = $row.find('.dyn-match-mode').val() !== 'ancestors';
+            const $row    = $(this).closest('.dyn-condition');
+            const taxName = $(this).val();
+            const isExact = $row.find('.dyn-match-mode').val() === 'exact';
             const showDepth = isExact && isTaxHierarchical(taxName);
             $row.find('.dyn-source-depth-wrap').toggle(showDepth);
             if (!showDepth) $row.find('.dyn-source-depth').val('');
+            updateConditionHelp($row);
         });
 
         // Changer le mode de correspondance → afficher/masquer le sélecteur de niveau
         $(document).on('change', '.dyn-match-mode', function () {
             const $row    = $(this).closest('.dyn-condition');
-            const isExact = $(this).val() !== 'ancestors';
+            const isExact = $(this).val() === 'exact';
             const taxName = $row.find('.dyn-source-tax').val();
             const showDepth = isExact && isTaxHierarchical(taxName);
             $row.find('.dyn-source-depth-wrap').toggle(showDepth);
             if (!showDepth) $row.find('.dyn-source-depth').val('');
+            updateConditionHelp($row);
+        });
+
+        // Mettre à jour l'aide sur tout changement lié aux conditions
+        $(document).on('change', '.dyn-target-tax, .dyn-tlc-tax, .dyn-tlc-op, .dyn-page-op', function () {
+            updateConditionHelp($(this).closest('.dyn-condition'));
         });
 
         // Actions segments

@@ -579,13 +579,83 @@
 
 .dyn-condition {
     display: flex;
-    align-items: center;
-    gap: 6px;
+    flex-direction: column;
+    gap: 0;
     background: #fff;
     border: 1px solid #dde5f0;
     border-radius: 4px;
+    overflow: hidden;
+}
+
+.dyn-condition-inputs {
+    display: flex;
+    align-items: center;
+    gap: 6px;
     padding: 6px 8px;
     flex-wrap: wrap;
+}
+
+/* ── Aide contextuelle ── */
+.dyn-cond-help {
+    padding: 8px 12px;
+    background: #f0f6ff;
+    border-top: 1px solid #d0e3f8;
+    font-size: 12px;
+    line-height: 1.55;
+    color: #374151;
+}
+
+.dyn-cond-help:empty {
+    display: none;
+}
+
+.dyn-help-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 5px;
+}
+
+.dyn-help-role {
+    display: inline-block;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    padding: 2px 7px;
+    border-radius: 3px;
+    white-space: nowrap;
+}
+
+.dyn-help-role-query   { background: #dbeafe; color: #1e40af; border: 1px solid #bfdbfe; }
+.dyn-help-role-filter  { background: #d1fae5; color: #065f46; border: 1px solid #a7f3d0; }
+.dyn-help-role-guard   { background: #fef3c7; color: #92400e; border: 1px solid #fde68a; }
+
+.dyn-help-subtitle {
+    font-size: 11px;
+    color: #6b7280;
+    font-style: italic;
+}
+
+.dyn-help-body {
+    margin: 0 0 4px 0;
+    color: #1f2937;
+}
+
+.dyn-help-tip {
+    margin: 3px 0 0 0;
+    color: #6b7280;
+    font-size: 11px;
+}
+
+.dyn-help-warn {
+    margin: 5px 0 3px 0;
+    padding: 5px 8px;
+    background: #fff7ed;
+    border: 1px solid #fed7aa;
+    border-radius: 3px;
+    color: #c2410c;
+    font-size: 11px;
 }
 
 .dyn-cond-label {

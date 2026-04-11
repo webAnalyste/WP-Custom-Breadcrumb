@@ -5,6 +5,12 @@ Toutes les modifications notables de ce projet seront documentées dans ce fichi
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet adhère au [Versioning Sémantique](https://semver.org/lang/fr/).
 
+## [2.1.27] - 2026-04-11
+
+### Ajouté
+- feat: aide contextuelle par condition dans l'interface dynamic_cpt — chaque condition affiche son rôle (QUERY / FILTRE / GARDE), sa logique, et un avertissement si les taxonomies sont incompatibles (cross-taxonomy mismatch)
+- fix: masquage de `source_depth` corrigé pour le mode `ancestors_or_equal` (était visible à tort)
+
 ## [2.1.26] - 2026-04-11
 
 ### Corrigé

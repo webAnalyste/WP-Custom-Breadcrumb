@@ -294,6 +294,7 @@ class Custom_Breadcrumb_Builder
                 $tax_query        = ['relation' => 'AND'];
                 $skip_segment     = false;
                 $post_filters     = []; // conditions évaluées après la WP_Query
+                $sort_hints       = []; // tri secondaire : qualité de correspondance (terme exact > ancêtre)
 
                 foreach ($conditions as $condition) {
                     // Compatibilité : ancienne valeur 'tax_cross' = 'tax_match'
@@ -369,6 +370,13 @@ class Custom_Breadcrumb_Builder
                             'terms'    => $term_ids,
                             'operator' => 'IN',
                         ];
+
+                        // Hint de tri : préférer les candidats qui ont le terme EXACT
+                        // plutôt que ceux qui n'ont qu'un terme ancêtre.
+                        $sort_hints[] = [
+                            'taxonomy' => $target_tax,
+                            'term_id'  => $deepest->term_id,
+                        ];
                     } else {
                         // Mode exact (défaut) : termes identiques
                         if (isset($condition['source_depth'])) {
@@ -434,10 +442,25 @@ class Custom_Breadcrumb_Builder
                     }
 
                     // Trier les candidats pour retourner le "plus proche" en premier.
-                    // Pour > / >= : ordre décroissant (valeur max en dessous du courant d'abord).
-                    // Pour < / <= : ordre croissant (valeur min au-dessus du courant d'abord).
-                    if (!empty($level_info)) {
-                        usort($candidates, function ($a, $b) use ($level_info) {
+                    // Tri primaire   : qualité de correspondance taxo (terme exact > ancêtre seul).
+                    // Tri secondaire : proximité page_level (> / >= : décroissant, < / <= : croissant).
+                    if (!empty($level_info) || !empty($sort_hints)) {
+                        usort($candidates, function ($a, $b) use ($level_info, $sort_hints) {
+                            // ── 1. Qualité de correspondance : exact > ancêtre ──
+                            foreach ($sort_hints as $hint) {
+                                $a_terms = get_the_terms($a->ID, $hint['taxonomy']);
+                                $b_terms = get_the_terms($b->ID, $hint['taxonomy']);
+                                $a_ids   = (!empty($a_terms) && !is_wp_error($a_terms))
+                                    ? array_map('intval', wp_list_pluck($a_terms, 'term_id')) : [];
+                                $b_ids   = (!empty($b_terms) && !is_wp_error($b_terms))
+                                    ? array_map('intval', wp_list_pluck($b_terms, 'term_id')) : [];
+                                $a_exact = in_array((int) $hint['term_id'], $a_ids, true) ? 1 : 0;
+                                $b_exact = in_array((int) $hint['term_id'], $b_ids, true) ? 1 : 0;
+                                if ($a_exact !== $b_exact) {
+                                    return $b_exact - $a_exact; // exact en premier
+                                }
+                            }
+                            // ── 2. Proximité de niveau (tax_level_compare) ──
                             foreach ($level_info as $info) {
                                 $a_terms = get_the_terms($a->ID, $info['tax']);
                                 $b_terms = get_the_terms($b->ID, $info['tax']);

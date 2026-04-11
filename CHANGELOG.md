@@ -5,6 +5,11 @@ Toutes les modifications notables de ce projet seront documentées dans ce fichi
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet adhère au [Versioning Sémantique](https://semver.org/lang/fr/).
 
+## [2.1.26] - 2026-04-11
+
+### Corrigé
+- fix: mode `ancestors_or_equal` — tri primaire par qualité de correspondance (terme exact > ancêtre) avant le tri par page_level, évitant qu'un post non-lié mais au même page_level gagne par ordre WP_Query
+
 ## [2.1.25] - 2026-04-10
 
 ### Ajouté

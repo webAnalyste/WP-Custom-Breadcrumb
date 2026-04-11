@@ -560,19 +560,15 @@
             let segment = null;
 
             if (type === 'text') {
-                const value = $segment.find('.segment-text').val();
-                if (value) segment = { type, value };
+                segment = { type, value: $segment.find('.segment-text').val() };
             } else if (type === 'page') {
-                const value = $segment.find('.segment-page').val();
-                if (value) segment = { type, value };
+                segment = { type, value: $segment.find('.segment-page').val() };
             } else if (type === 'archive') {
-                const value = $segment.find('.segment-archive').val();
-                if (value) segment = { type, value };
+                segment = { type, value: $segment.find('.segment-archive').val() };
             } else if (type === 'taxonomy') {
-                const value = $segment.find('.segment-taxonomy').val();
-                if (value) segment = { type, value };
+                segment = { type, value: $segment.find('.segment-taxonomy').val() };
             } else if (type === 'dynamic_cpt') {
-                const cpt = $segment.find('.segment-dyn-cpt').val();
+                const cpt = $segment.find('.segment-dyn-cpt').val() || '';
                 const conditions = [];
                 $segment.find('.dyn-condition').each(function () {
                     let condType = $(this).find('.dyn-cond-type').val() || 'tax_match';
@@ -605,10 +601,9 @@
                         }
                     }
                 });
-                // Un segment dynamic_cpt requiert un CPT cible et au moins une condition valide
-                if (cpt && conditions.length > 0) {
-                    segment = { type, cpt, conditions };
-                }
+                // Toujours sauvegarder le segment même incomplet — le Builder PHP ignore
+                // les segments sans valeur/CPT/conditions, mais l'UI doit les conserver.
+                segment = { type, cpt, conditions };
             }
 
             if (segment) {

@@ -5,6 +5,11 @@ Toutes les modifications notables de ce projet seront documentées dans ce fichi
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet adhère au [Versioning Sémantique](https://semver.org/lang/fr/).
 
+## [2.1.28] - 2026-04-11
+
+### Corrigé
+- **fix critique** : les segments de breadcrumb n'étaient plus sauvegardés si leur configuration était incomplète au moment de l'enregistrement (page non sélectionnée, CPT sans conditions…). Désormais tous les segments sont conservés même partiels — le Builder PHP ignore les segments vides côté frontend, mais l'UI les affiche pour que l'utilisateur puisse les corriger.
+
 ## [2.1.27] - 2026-04-11
 
 ### Ajouté

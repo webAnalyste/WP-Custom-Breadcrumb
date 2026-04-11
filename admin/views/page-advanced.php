@@ -433,15 +433,6 @@ $pages = get_pages(['number' => 100]);
                         <label class="dyn-label-inline">Conditions <em>(logique ET — toutes doivent être vraies)</em> :</label>
                         <div class="dyn-conditions-list"></div>
                         <button type="button" class="button dyn-add-condition">+ Ajouter une condition</button>
-                        <p class="description">
-                            Chaque condition lie le post courant au CPT cible. Toutes les conditions doivent être vraies (logique ET).<br>
-                            <strong>Cas d'usage typique — remonter d'un niveau dans une hiérarchie :</strong><br>
-                            Post courant : <em>Agence Google Analytics</em> (solution_category = Web Analytics, page_level = 3)<br>
-                            Résultat attendu : <em>Agence Web Analytics</em> (solution_category = Web Analytics, page_level = 2)<br>
-                            → Condition 1 : <strong>Même terme (taxo)</strong> · solution_category · <strong>= terme identique OU ancêtre ⭐</strong> · solution_category<br>
-                            → Condition 2 : <strong>Comparer profondeurs taxo</strong> · page_level · <strong>&gt;</strong> · valeur du post cible<br>
-                            ⚠️ Utiliser <em>"= terme ancêtre"</em> seul cherche uniquement les posts ayant un terme <em>parent</em> (ex : Data Analytics) — les posts au même niveau taxonomique ne seront pas candidats.
-                        </p>
                     </div>
                 </div>
             </div>

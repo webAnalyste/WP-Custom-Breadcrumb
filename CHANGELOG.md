@@ -5,6 +5,12 @@ Toutes les modifications notables de ce projet seront documentées dans ce fichi
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet adhère au [Versioning Sémantique](https://semver.org/lang/fr/).
 
+## [2.1.29] - 2026-04-11
+
+### Modifié
+- ux: suppression du pavé de texte statique sous les conditions dynamic_cpt — remplacé par l'aide contextuelle par condition
+- ux: aide contextuelle `tax_match` mode exact + taxonomie hiérarchique : explication du champ "niv." (vide = auto, 0 = racine, 1 = 2ᵉ niveau…)
+
 ## [2.1.28] - 2026-04-11
 
 ### Corrigé

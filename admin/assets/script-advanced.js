@@ -46,9 +46,15 @@
                 warnHtml = `<p class="dyn-help-warn">⚠️ <strong>Taxonomies différentes :</strong> <code>${esc(srcTax)}</code> ≠ <code>${esc(tgtTax)}</code>. Chaque taxonomie a ses propres term_id — la correspondance sera incorrecte. Utilisez <strong>la même taxonomie</strong> des deux côtés, ou vérifiez que les deux CPT partagent bien cette taxonomie.</p>`;
             }
 
+            let depthHtml = '';
+            if (mode === 'exact' && srcTax && isTaxHierarchical(srcTax)) {
+                depthHtml = `<p class="dyn-help-tip">📊 <strong>Niveau</strong> (champ niv.) : vide = terme le plus profond du post courant (auto) · <code>0</code> = terme racine · <code>1</code> = 2<sup>e</sup> niveau · <code>2</code> = 3<sup>e</sup> niveau…</p>`;
+            }
+
             html = `<div class="dyn-help-header"><span class="dyn-help-role dyn-help-role-query">🔍 QUERY</span><span class="dyn-help-subtitle">Définit <em>quels</em> posts rechercher</span></div>
                     <p class="dyn-help-body">${m.icon} ${m.text}</p>
                     ${warnHtml}
+                    ${depthHtml}
                     <p class="dyn-help-tip">Au moins une condition de ce type est requise par segment — sans elle, aucune recherche n'est lancée.</p>`;
 
         } else if (condType === 'tax_level_compare') {

@@ -5,6 +5,11 @@ Toutes les modifications notables de ce projet seront documentées dans ce fichi
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet adhère au [Versioning Sémantique](https://semver.org/lang/fr/).
 
+## [2.1.33] - 2026-04-11
+
+### Corrigé
+- fix: 3 segments Personnalisé empilés — le segment intérieur (sans chaîne) remontait une agence au mauvais niveau ; `tax_level_compare >` est maintenant auto-injecté pour **tout** segment `ancestors_or_equal` sans filtre explicite (pas seulement les segments chaînés), garantissant que chaque segment trouve l'agence immédiatement plus plate que sa source
+
 ## [2.1.32] - 2026-04-11
 
 ### Corrigé

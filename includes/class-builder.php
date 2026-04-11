@@ -505,21 +505,28 @@ class Custom_Breadcrumb_Builder
             return null;
         }
 
-        // En mode chaîne, on cherche un POST PARENT : auto-injecter un filtre
-        // tax_level_compare '>' sur chaque taxonomie impliquée pour exclure les
-        // candidats au même niveau ou plus profond que la source (ex : autre agence
-        // avec le même terme taxo au lieu de l'agence parente).
-        if (!empty($segment['chain'])) {
-            $chain_taxes = [];
-            foreach ($conditions as $condition) {
-                $ct   = $condition['type'] ?? 'tax_match';
-                $ttax = $condition['target_tax'] ?? '';
-                if (($ct === 'tax_match' || $ct === 'tax_cross') && $ttax && !in_array($ttax, $chain_taxes, true)) {
-                    $chain_taxes[] = $ttax;
-                }
+        // Pour chaque condition ancestors_or_equal sans tax_level_compare explicite,
+        // auto-injecter un filtre '>' : le candidat doit être taxonomiquement plus
+        // plat que la source (parent, pas un frère de même niveau).
+        // Cela s'applique aussi bien aux segments chaînés qu'aux segments normaux.
+        $explicit_compare_taxes = [];
+        foreach ($post_filters as $f) {
+            if (($f['type'] ?? '') === 'tax_level_compare' && !empty($f['taxonomy'])) {
+                $explicit_compare_taxes[] = $f['taxonomy'];
             }
-            foreach ($chain_taxes as $ctax) {
-                $post_filters[] = ['type' => 'tax_level_compare', 'taxonomy' => $ctax, 'operator' => '>'];
+        }
+        foreach ($conditions as $condition) {
+            $ct = $condition['type'] ?? 'tax_match';
+            if ($ct === 'tax_cross') {
+                $ct = 'tax_match';
+            }
+            if ($ct !== 'tax_match' || ($condition['match_mode'] ?? '') !== 'ancestors_or_equal') {
+                continue;
+            }
+            $ttax = $condition['target_tax'] ?? '';
+            if ($ttax && !in_array($ttax, $explicit_compare_taxes, true)) {
+                $post_filters[]           = ['type' => 'tax_level_compare', 'taxonomy' => $ttax, 'operator' => '>'];
+                $explicit_compare_taxes[] = $ttax;
             }
         }
 

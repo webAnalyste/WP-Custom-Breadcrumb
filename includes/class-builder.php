@@ -120,10 +120,27 @@ class Custom_Breadcrumb_Builder
 
     private function build_from_rule(array $rule): void
     {
-        // Ajouter les segments personnalisés
+        // Ajouter les segments personnalisés.
+        // En mode chaîne (chain=true sur un dynamic_cpt), les segments sont pré-résolus
+        // en ordre inverse : chaque segment externe requête depuis le post trouvé par le
+        // segment interne, plutôt que depuis le post WP courant.
         if (!empty($rule['segments'])) {
-            foreach ($rule['segments'] as $segment) {
-                $this->add_segment($segment);
+            $resolved = $this->pre_resolve_chained_segments($rule['segments']);
+
+            foreach ($rule['segments'] as $idx => $segment) {
+                if (array_key_exists($idx, $resolved)) {
+                    $found = $resolved[$idx];
+                    if ($found) {
+                        $custom_label = isset($segment['label']) && $segment['label'] !== '' ? $segment['label'] : null;
+                        $this->items[] = [
+                            'label' => $custom_label ?? get_the_title($found),
+                            'url'   => get_permalink($found),
+                            'type'  => 'segment',
+                        ];
+                    }
+                } else {
+                    $this->add_segment($segment);
+                }
             }
         }
 
@@ -274,251 +291,20 @@ class Custom_Breadcrumb_Builder
                 break;
 
             case 'dynamic_cpt':
-                // Résolution d'un post CPT via conditions taxonomiques croisées
+                // La logique complète est dans resolve_dynamic_cpt_post().
+                // Les segments avec chain=true sont pré-résolus dans build_from_rule()
+                // et n'atteignent jamais ce case — seuls les segments normaux passent ici.
                 if (!$this->context->is_singular()) {
                     break;
                 }
-
                 $post = $this->context->get_post();
                 if (!$post) {
                     break;
                 }
-
-                $target_cpt = $segment['cpt'] ?? '';
-                $conditions  = $segment['conditions'] ?? [];
-
-                if (empty($target_cpt) || empty($conditions)) {
-                    break;
-                }
-
-                $tax_query        = ['relation' => 'AND'];
-                $skip_segment     = false;
-                $post_filters     = []; // conditions évaluées après la WP_Query
-                $sort_hints       = []; // tri secondaire : qualité de correspondance (terme exact > ancêtre)
-
-                foreach ($conditions as $condition) {
-                    // Compatibilité : ancienne valeur 'tax_cross' = 'tax_match'
-                    $cond_type = $condition['type'] ?? 'tax_match';
-                    if ($cond_type === 'tax_cross') {
-                        $cond_type = 'tax_match';
-                    }
-
-                    // ── Garde pré-query : niveau hiérarchique de la page courante ──
-                    if ($cond_type === 'page_level') {
-                        $page_depth = count(get_post_ancestors($post->ID));
-                        $operator   = $condition['operator'] ?? '=';
-                        $n          = intval($condition['value'] ?? 0);
-                        if (!$this->compare_values($page_depth, $operator, $n)) {
-                            $skip_segment = true;
-                            break;
-                        }
-                        continue;
-                    }
-
-                    // ── Filtre post-query : comparaison de profondeurs taxonomiques ──
-                    if ($cond_type === 'tax_level_compare') {
-                        $post_filters[] = $condition;
-                        continue;
-                    }
-
-                    // ── Condition tax_match : trouve le post cible via termes ──
-                    $source_tax  = $condition['source_tax']  ?? '';
-                    $target_tax  = $condition['target_tax']  ?? '';
-                    $match_mode  = $condition['match_mode']  ?? 'exact';
-
-                    if (empty($source_tax) || empty($target_tax)) {
-                        continue;
-                    }
-
-                    $terms = get_the_terms($post->ID, $source_tax);
-
-                    if (empty($terms) || is_wp_error($terms)) {
-                        continue;
-                    }
-
-                    if ($match_mode === 'ancestors') {
-                        // Mode ancêtre : cherche les posts cibles dont le terme
-                        // est un ANCÊTRE du terme le plus profond du post courant.
-                        // Ex. : post courant a "Google Tag Manager" (enfant de "Web Analytics")
-                        //       → cherche agences qui ont "Web Analytics" (ancêtre)
-                        $deepest      = $this->get_deepest_term($terms);
-                        $ancestor_ids = get_ancestors($deepest->term_id, $source_tax);
-
-                        if (empty($ancestor_ids)) {
-                            continue; // pas d'ancêtres → aucune correspondance possible
-                        }
-
-                        $tax_query[] = [
-                            'taxonomy' => $target_tax,
-                            'field'    => 'term_id',
-                            'terms'    => $ancestor_ids,
-                            'operator' => 'IN',
-                        ];
-                    } elseif ($match_mode === 'ancestors_or_equal') {
-                        // Mode ancêtre-ou-égal : cherche les posts cibles dont le terme
-                        // est LE MÊME que OU un ANCÊTRE du terme le plus profond du post courant.
-                        // Ex. : post courant a "Agence Google Analytics" (solution_category : Web Analytics, page_level : 3)
-                        //       → candidats : agences avec "Web Analytics" (même terme) ET agences avec "Data Analytics" (ancêtre)
-                        //       → combiné avec tax_level_compare page_level > cible, retient l'agence au niveau 2 (Web Analytics)
-                        $deepest      = $this->get_deepest_term($terms);
-                        $ancestor_ids = get_ancestors($deepest->term_id, $source_tax);
-                        $term_ids     = array_merge([$deepest->term_id], $ancestor_ids);
-
-                        $tax_query[] = [
-                            'taxonomy' => $target_tax,
-                            'field'    => 'term_id',
-                            'terms'    => $term_ids,
-                            'operator' => 'IN',
-                        ];
-
-                        // Hint de tri : préférer les candidats qui ont le terme EXACT
-                        // plutôt que ceux qui n'ont qu'un terme ancêtre.
-                        $sort_hints[] = [
-                            'taxonomy' => $target_tax,
-                            'term_id'  => $deepest->term_id,
-                        ];
-                    } else {
-                        // Mode exact (défaut) : termes identiques
-                        if (isset($condition['source_depth'])) {
-                            $terms = $this->get_terms_at_depth($terms, $source_tax, intval($condition['source_depth']));
-                            if (empty($terms)) {
-                                continue;
-                            }
-                        }
-
-                        $tax_query[] = [
-                            'taxonomy' => $target_tax,
-                            'field'    => 'term_id',
-                            'terms'    => wp_list_pluck($terms, 'term_id'),
-                            'operator' => 'IN',
-                        ];
-                    }
-                }
-
-                if ($skip_segment) {
-                    break;
-                }
-
-                // Au moins une condition tax_match doit exister pour construire la query
-                if (count($tax_query) <= 1) {
-                    break;
-                }
-
-                $query = new WP_Query([
-                    'post_type'              => $target_cpt,
-                    'post_status'            => 'publish',
-                    'posts_per_page'         => 10,
-                    'post__not_in'           => [$post->ID], // exclure le post courant lui-même
-                    'tax_query'              => $tax_query,
-                    'no_found_rows'          => true,
-                    'update_post_term_cache' => false,
-                    'update_post_meta_cache' => false,
-                ]);
-
-                if (!$query->have_posts()) {
-                    break;
-                }
-
-                // ── Filtres post-query (tax_level_compare) ──
-                $candidates = $query->posts;
-
-                if (!empty($post_filters)) {
-                    // Pré-calcul de la valeur du post courant pour chaque filtre
-                    $level_info = [];
-                    foreach ($post_filters as $filter) {
-                        if ($filter['type'] !== 'tax_level_compare') continue;
-                        $tax = $filter['taxonomy'] ?? '';
-                        $op  = $filter['operator']  ?? '=';
-                        if (empty($tax)) continue;
-                        $cur_terms = get_the_terms($post->ID, $tax);
-                        if (empty($cur_terms) || is_wp_error($cur_terms)) continue;
-                        $level_info[] = [
-                            'tax'         => $tax,
-                            'op'          => $op,
-                            'current_val' => $this->get_term_comparison_value(
-                                $this->get_deepest_term($cur_terms)
-                            ),
-                        ];
-                    }
-
-                    // Trier les candidats pour retourner le "plus proche" en premier.
-                    // Tri primaire   : qualité de correspondance taxo (terme exact > ancêtre seul).
-                    // Tri secondaire : proximité page_level (> / >= : décroissant, < / <= : croissant).
-                    if (!empty($level_info) || !empty($sort_hints)) {
-                        usort($candidates, function ($a, $b) use ($level_info, $sort_hints) {
-                            // ── 1. Qualité de correspondance : exact > ancêtre ──
-                            foreach ($sort_hints as $hint) {
-                                $a_terms = get_the_terms($a->ID, $hint['taxonomy']);
-                                $b_terms = get_the_terms($b->ID, $hint['taxonomy']);
-                                $a_ids   = (!empty($a_terms) && !is_wp_error($a_terms))
-                                    ? array_map('intval', wp_list_pluck($a_terms, 'term_id')) : [];
-                                $b_ids   = (!empty($b_terms) && !is_wp_error($b_terms))
-                                    ? array_map('intval', wp_list_pluck($b_terms, 'term_id')) : [];
-                                $a_exact = in_array((int) $hint['term_id'], $a_ids, true) ? 1 : 0;
-                                $b_exact = in_array((int) $hint['term_id'], $b_ids, true) ? 1 : 0;
-                                if ($a_exact !== $b_exact) {
-                                    return $b_exact - $a_exact; // exact en premier
-                                }
-                            }
-                            // ── 2. Proximité de niveau (tax_level_compare) ──
-                            foreach ($level_info as $info) {
-                                $a_terms = get_the_terms($a->ID, $info['tax']);
-                                $b_terms = get_the_terms($b->ID, $info['tax']);
-                                $a_val   = (!empty($a_terms) && !is_wp_error($a_terms))
-                                    ? $this->get_term_comparison_value($this->get_deepest_term($a_terms))
-                                    : 0;
-                                $b_val   = (!empty($b_terms) && !is_wp_error($b_terms))
-                                    ? $this->get_term_comparison_value($this->get_deepest_term($b_terms))
-                                    : 0;
-                                $desc = in_array($info['op'], ['>', '>='], true);
-                                $diff = $desc ? ($b_val - $a_val) : ($a_val - $b_val);
-                                if ($diff !== 0) return $diff;
-                            }
-                            return 0;
-                        });
-                    }
-                }
-
-                $found = null;
-                foreach ($candidates as $candidate) {
-                    $candidate_ok = true;
-                    foreach ($post_filters as $filter) {
-                        if ($filter['type'] !== 'tax_level_compare') continue;
-                        $taxonomy = $filter['taxonomy'] ?? '';
-                        $operator = $filter['operator'] ?? '=';
-                        if (empty($taxonomy)) continue;
-
-                        $current_terms = get_the_terms($post->ID, $taxonomy);
-                        $target_terms  = get_the_terms($candidate->ID, $taxonomy);
-
-                        if (empty($current_terms) || is_wp_error($current_terms) ||
-                            empty($target_terms)   || is_wp_error($target_terms)) {
-                            $candidate_ok = false;
-                            break;
-                        }
-
-                        $current_val = $this->get_term_comparison_value(
-                            $this->get_deepest_term($current_terms)
-                        );
-                        $target_val  = $this->get_term_comparison_value(
-                            $this->get_deepest_term($target_terms)
-                        );
-
-                        if (!$this->compare_values($current_val, $operator, $target_val)) {
-                            $candidate_ok = false;
-                            break;
-                        }
-                    }
-                    if ($candidate_ok) {
-                        $found = $candidate;
-                        break;
-                    }
-                }
-
+                $found = $this->resolve_dynamic_cpt_post($segment, $post);
                 if (!$found) {
                     break;
                 }
-
                 $this->items[] = [
                     'label' => $custom_label ?? get_the_title($found),
                     'url'   => get_permalink($found),
@@ -572,6 +358,263 @@ class Custom_Breadcrumb_Builder
                 }
                 break;
         }
+    }
+
+    /**
+     * Pré-résout les segments dynamic_cpt en ordre inverse pour le mode chaîne.
+     * Retourne [idx => ?\WP_Post] pour chaque segment dynamic_cpt trouvé.
+     * Si aucun segment n'a chain=true, retourne [] → traitement normal via add_segment().
+     */
+    private function pre_resolve_chained_segments(array $segments): array
+    {
+        $has_chain = false;
+        foreach ($segments as $seg) {
+            if (($seg['type'] ?? '') === 'dynamic_cpt' && !empty($seg['chain'])) {
+                $has_chain = true;
+                break;
+            }
+        }
+
+        if (!$has_chain) {
+            return [];
+        }
+
+        $resolved     = [];
+        $chain_source = null; // post trouvé par le segment plus interne (alimenté au fil du parcours)
+
+        for ($i = count($segments) - 1; $i >= 0; $i--) {
+            $seg = $segments[$i];
+            if (($seg['type'] ?? '') !== 'dynamic_cpt') {
+                continue;
+            }
+
+            $is_chained  = !empty($seg['chain']);
+            $source_post = ($is_chained && $chain_source !== null)
+                ? $chain_source
+                : $this->context->get_post();
+
+            $found        = $source_post ? $this->resolve_dynamic_cpt_post($seg, $source_post) : null;
+            $resolved[$i] = $found;
+
+            if ($found) {
+                $chain_source = $found; // devient la source pour les segments encore plus externes
+            }
+        }
+
+        return $resolved;
+    }
+
+    /**
+     * Requête et sélection du post CPT correspondant aux conditions du segment.
+     * Accepte un post source explicite : en mode normal c'est le post WP courant,
+     * en mode chaîne c'est le post trouvé par le segment interne.
+     */
+    private function resolve_dynamic_cpt_post(array $segment, \WP_Post $post): ?\WP_Post
+    {
+        $target_cpt = $segment['cpt'] ?? '';
+        $conditions  = $segment['conditions'] ?? [];
+
+        if (empty($target_cpt) || empty($conditions)) {
+            return null;
+        }
+
+        $tax_query    = ['relation' => 'AND'];
+        $skip_segment = false;
+        $post_filters = [];
+        $sort_hints   = [];
+
+        foreach ($conditions as $condition) {
+            $cond_type = $condition['type'] ?? 'tax_match';
+            if ($cond_type === 'tax_cross') {
+                $cond_type = 'tax_match';
+            }
+
+            if ($cond_type === 'page_level') {
+                $page_depth = count(get_post_ancestors($post->ID));
+                $operator   = $condition['operator'] ?? '=';
+                $n          = intval($condition['value'] ?? 0);
+                if (!$this->compare_values($page_depth, $operator, $n)) {
+                    $skip_segment = true;
+                    break;
+                }
+                continue;
+            }
+
+            if ($cond_type === 'tax_level_compare') {
+                $post_filters[] = $condition;
+                continue;
+            }
+
+            // tax_match
+            $source_tax = $condition['source_tax'] ?? '';
+            $target_tax = $condition['target_tax'] ?? '';
+            $match_mode = $condition['match_mode'] ?? 'exact';
+
+            if (empty($source_tax) || empty($target_tax)) {
+                continue;
+            }
+
+            $terms = get_the_terms($post->ID, $source_tax);
+            if (empty($terms) || is_wp_error($terms)) {
+                continue;
+            }
+
+            if ($match_mode === 'ancestors') {
+                $deepest      = $this->get_deepest_term($terms);
+                $ancestor_ids = get_ancestors($deepest->term_id, $source_tax);
+                if (empty($ancestor_ids)) {
+                    continue;
+                }
+                $tax_query[] = [
+                    'taxonomy' => $target_tax,
+                    'field'    => 'term_id',
+                    'terms'    => $ancestor_ids,
+                    'operator' => 'IN',
+                ];
+            } elseif ($match_mode === 'ancestors_or_equal') {
+                $deepest      = $this->get_deepest_term($terms);
+                $ancestor_ids = get_ancestors($deepest->term_id, $source_tax);
+                $term_ids     = array_merge([$deepest->term_id], $ancestor_ids);
+                $tax_query[]  = [
+                    'taxonomy' => $target_tax,
+                    'field'    => 'term_id',
+                    'terms'    => $term_ids,
+                    'operator' => 'IN',
+                ];
+                $sort_hints[] = [
+                    'taxonomy' => $target_tax,
+                    'term_id'  => $deepest->term_id,
+                ];
+            } else {
+                if (isset($condition['source_depth'])) {
+                    $terms = $this->get_terms_at_depth($terms, $source_tax, intval($condition['source_depth']));
+                    if (empty($terms)) {
+                        continue;
+                    }
+                }
+                $tax_query[] = [
+                    'taxonomy' => $target_tax,
+                    'field'    => 'term_id',
+                    'terms'    => wp_list_pluck($terms, 'term_id'),
+                    'operator' => 'IN',
+                ];
+            }
+        }
+
+        if ($skip_segment || count($tax_query) <= 1) {
+            return null;
+        }
+
+        // Exclure le post source ET le post WP courant (évite les boucles en mode chaîne)
+        $exclude      = [$post->ID];
+        $current_post = $this->context->get_post();
+        if ($current_post && $current_post->ID !== $post->ID) {
+            $exclude[] = $current_post->ID;
+        }
+
+        $query = new WP_Query([
+            'post_type'              => $target_cpt,
+            'post_status'            => 'publish',
+            'posts_per_page'         => 10,
+            'post__not_in'           => $exclude,
+            'tax_query'              => $tax_query,
+            'no_found_rows'          => true,
+            'update_post_term_cache' => false,
+            'update_post_meta_cache' => false,
+        ]);
+
+        if (!$query->have_posts()) {
+            return null;
+        }
+
+        $candidates = $query->posts;
+
+        if (!empty($post_filters)) {
+            $level_info = [];
+            foreach ($post_filters as $filter) {
+                if ($filter['type'] !== 'tax_level_compare') continue;
+                $tax = $filter['taxonomy'] ?? '';
+                $op  = $filter['operator']  ?? '=';
+                if (empty($tax)) continue;
+                $cur_terms = get_the_terms($post->ID, $tax);
+                if (empty($cur_terms) || is_wp_error($cur_terms)) continue;
+                $level_info[] = [
+                    'tax'         => $tax,
+                    'op'          => $op,
+                    'current_val' => $this->get_term_comparison_value(
+                        $this->get_deepest_term($cur_terms)
+                    ),
+                ];
+            }
+
+            if (!empty($level_info) || !empty($sort_hints)) {
+                usort($candidates, function ($a, $b) use ($level_info, $sort_hints) {
+                    foreach ($sort_hints as $hint) {
+                        $a_terms = get_the_terms($a->ID, $hint['taxonomy']);
+                        $b_terms = get_the_terms($b->ID, $hint['taxonomy']);
+                        $a_ids   = (!empty($a_terms) && !is_wp_error($a_terms))
+                            ? array_map('intval', wp_list_pluck($a_terms, 'term_id')) : [];
+                        $b_ids   = (!empty($b_terms) && !is_wp_error($b_terms))
+                            ? array_map('intval', wp_list_pluck($b_terms, 'term_id')) : [];
+                        $a_exact = in_array((int) $hint['term_id'], $a_ids, true) ? 1 : 0;
+                        $b_exact = in_array((int) $hint['term_id'], $b_ids, true) ? 1 : 0;
+                        if ($a_exact !== $b_exact) {
+                            return $b_exact - $a_exact;
+                        }
+                    }
+                    foreach ($level_info as $info) {
+                        $a_terms = get_the_terms($a->ID, $info['tax']);
+                        $b_terms = get_the_terms($b->ID, $info['tax']);
+                        $a_val   = (!empty($a_terms) && !is_wp_error($a_terms))
+                            ? $this->get_term_comparison_value($this->get_deepest_term($a_terms)) : 0;
+                        $b_val   = (!empty($b_terms) && !is_wp_error($b_terms))
+                            ? $this->get_term_comparison_value($this->get_deepest_term($b_terms)) : 0;
+                        $desc = in_array($info['op'], ['>', '>='], true);
+                        $diff = $desc ? ($b_val - $a_val) : ($a_val - $b_val);
+                        if ($diff !== 0) return $diff;
+                    }
+                    return 0;
+                });
+            }
+        }
+
+        $found = null;
+        foreach ($candidates as $candidate) {
+            $candidate_ok = true;
+            foreach ($post_filters as $filter) {
+                if ($filter['type'] !== 'tax_level_compare') continue;
+                $taxonomy = $filter['taxonomy'] ?? '';
+                $operator = $filter['operator'] ?? '=';
+                if (empty($taxonomy)) continue;
+
+                $current_terms = get_the_terms($post->ID, $taxonomy);
+                $target_terms  = get_the_terms($candidate->ID, $taxonomy);
+
+                if (empty($current_terms) || is_wp_error($current_terms) ||
+                    empty($target_terms)   || is_wp_error($target_terms)) {
+                    $candidate_ok = false;
+                    break;
+                }
+
+                $current_val = $this->get_term_comparison_value(
+                    $this->get_deepest_term($current_terms)
+                );
+                $target_val  = $this->get_term_comparison_value(
+                    $this->get_deepest_term($target_terms)
+                );
+
+                if (!$this->compare_values($current_val, $operator, $target_val)) {
+                    $candidate_ok = false;
+                    break;
+                }
+            }
+            if ($candidate_ok) {
+                $found = $candidate;
+                break;
+            }
+        }
+
+        return $found;
     }
 
     /**

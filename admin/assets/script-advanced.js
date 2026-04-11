@@ -434,7 +434,7 @@
                         const mode  = c.match_mode === 'ancestors' ? '⊃' : c.match_mode === 'ancestors_or_equal' ? '⊇' : '=';
                         return `${esc(c.source_tax || '?')}${depth}${mode}${esc(c.target_tax || '?')}`;
                     }).join(', ');
-                    preview += customLabel || `🔧 ${esc(segment.cpt || 'CPT')} [${condSummary}]`;
+                    preview += customLabel || `${segment.chain ? '🔗' : '🔧'} ${esc(segment.cpt || 'CPT')} [${condSummary}]`;
                 } else {
                     preview += customLabel || '?';
                 }
@@ -510,11 +510,11 @@
             } else if (data.type === 'dynamic_cpt') {
                 const $dynPanel = $template.find('.segment-dynamic-cpt');
                 $dynPanel.find('.segment-dyn-cpt').html(buildCptOptions(data.cpt || ''));
+                $dynPanel.find('.segment-dyn-chain').prop('checked', !!data.chain);
                 const $condList = $dynPanel.find('.dyn-conditions-list');
                 $condList.empty();
                 if (data.conditions && data.conditions.length > 0) {
                     data.conditions.forEach(function (cond) {
-                        // Compatibilité ascendante : les anciennes conditions n'ont pas de champ type
                         addConditionRow($condList, cond);
                     });
                 }
@@ -574,7 +574,8 @@
             } else if (type === 'taxonomy') {
                 segment = { type, value: $segment.find('.segment-taxonomy').val() };
             } else if (type === 'dynamic_cpt') {
-                const cpt = $segment.find('.segment-dyn-cpt').val() || '';
+                const cpt   = $segment.find('.segment-dyn-cpt').val() || '';
+                const chain = $segment.find('.segment-dyn-chain').is(':checked');
                 const conditions = [];
                 $segment.find('.dyn-condition').each(function () {
                     let condType = $(this).find('.dyn-cond-type').val() || 'tax_match';
@@ -610,6 +611,7 @@
                 // Toujours sauvegarder le segment même incomplet — le Builder PHP ignore
                 // les segments sans valeur/CPT/conditions, mais l'UI doit les conserver.
                 segment = { type, cpt, conditions };
+                if (chain) segment.chain = true;
             }
 
             if (segment) {

@@ -5,6 +5,12 @@ Toutes les modifications notables de ce projet seront documentées dans ce fichi
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet adhère au [Versioning Sémantique](https://semver.org/lang/fr/).
 
+## [2.1.30] - 2026-04-11
+
+### Ajouté
+- feat: mode **chaîne** (`chain`) sur les segments Personnalisé — le segment externe requête depuis le post trouvé par le segment interne, et non depuis la page courante. Résout le problème du 3ᵉ niveau où deux `dynamic_cpt` empilés renvoyaient des candidats incohérents car ils requêtaient tous deux depuis le même post WP.
+- La logique `dynamic_cpt` est extraite dans `resolve_dynamic_cpt_post()` (réutilisable) et `pre_resolve_chained_segments()` (résolution en ordre inverse pour construire la chaîne).
+
 ## [2.1.29] - 2026-04-11
 
 ### Modifié

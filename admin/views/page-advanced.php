@@ -429,6 +429,13 @@ $pages = get_pages(['number' => 100]);
                             <option value="">— Sélectionner un CPT cible —</option>
                         </select>
                     </div>
+                    <div class="dyn-chain-option">
+                        <label>
+                            <input type="checkbox" class="segment-dyn-chain">
+                            🔗 <strong>Chercher depuis le segment suivant</strong>
+                            <span class="description"> — ce segment requêtera depuis le post trouvé par le segment Personnalisé qui le suit, et non depuis la page courante. À activer sur le segment le plus externe quand vous empilez plusieurs segments Personnalisé.</span>
+                        </label>
+                    </div>
                     <div class="dyn-cpt-conditions">
                         <label class="dyn-label-inline">Conditions <em>(logique ET — toutes doivent être vraies)</em> :</label>
                         <div class="dyn-conditions-list"></div>

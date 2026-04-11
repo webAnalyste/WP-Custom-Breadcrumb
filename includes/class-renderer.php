@@ -40,13 +40,18 @@ class Custom_Breadcrumb_Renderer
         $builder = new Custom_Breadcrumb_Builder($this->config, $context);
         $items = $builder->build($mode);
 
+        $debug_html = '';
+        if (!empty($builder->debug_log)) {
+            $debug_html = "\n<!-- CB-DEBUG\n" . implode("\n", $builder->debug_log) . "\n-->\n";
+        }
+
         if (empty($items)) {
-            return '';
+            return $debug_html;
         }
 
         $html = $this->render_html($items);
-        
-        return apply_filters('custom_breadcrumb_html', $html, $items);
+
+        return $debug_html . apply_filters('custom_breadcrumb_html', $html, $items);
     }
 
     private function render_html(array $items): string

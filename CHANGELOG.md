@@ -5,6 +5,11 @@ Toutes les modifications notables de ce projet seront documentées dans ce fichi
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet adhère au [Versioning Sémantique](https://semver.org/lang/fr/).
 
+## [2.1.34] - 2026-04-11
+
+### Corrigé
+- fix: 3e segment Personnalisé (non-chaîné) absent — l'opérateur `>` excluait les agences au même niveau taxo que le post courant ; le segment intérieur (chain=false) utilise désormais `>=` pour accepter les candidats au même niveau ou plus plat, le plus profond étant sélectionné en premier
+
 ## [2.1.33] - 2026-04-11
 
 ### Corrigé

@@ -506,9 +506,12 @@ class Custom_Breadcrumb_Builder
         }
 
         // Pour chaque condition ancestors_or_equal sans tax_level_compare explicite,
-        // auto-injecter un filtre '>' : le candidat doit être taxonomiquement plus
-        // plat que la source (parent, pas un frère de même niveau).
-        // Cela s'applique aussi bien aux segments chaînés qu'aux segments normaux.
+        // auto-injecter un filtre de profondeur pour trier les candidats et éviter
+        // les faux positifs (agence au mauvais niveau).
+        // - chain=true  → opérateur '>'  : candidat strictement plus plat (parent réel)
+        // - chain=false → opérateur '>=' : candidat au même niveau ou plus plat,
+        //   le plus profond d'abord (segment intérieur qui requête depuis le post courant)
+        $is_chained             = !empty($segment['chain']);
         $explicit_compare_taxes = [];
         foreach ($post_filters as $f) {
             if (($f['type'] ?? '') === 'tax_level_compare' && !empty($f['taxonomy'])) {
@@ -525,7 +528,8 @@ class Custom_Breadcrumb_Builder
             }
             $ttax = $condition['target_tax'] ?? '';
             if ($ttax && !in_array($ttax, $explicit_compare_taxes, true)) {
-                $post_filters[]           = ['type' => 'tax_level_compare', 'taxonomy' => $ttax, 'operator' => '>'];
+                $op                       = $is_chained ? '>' : '>=';
+                $post_filters[]           = ['type' => 'tax_level_compare', 'taxonomy' => $ttax, 'operator' => $op];
                 $explicit_compare_taxes[] = $ttax;
             }
         }

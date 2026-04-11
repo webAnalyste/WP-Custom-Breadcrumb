@@ -5,6 +5,11 @@ Toutes les modifications notables de ce projet seront documentées dans ce fichi
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet adhère au [Versioning Sémantique](https://semver.org/lang/fr/).
 
+## [2.1.35] - 2026-04-11
+
+### Ajouté
+- debug: logs `[CB-CHAIN]` dans `wp-content/debug.log` quand `WP_DEBUG=true` — trace chaque segment de la chaîne (source, candidats, raison de rejet) pour diagnostiquer les segments invisibles
+
 ## [2.1.34] - 2026-04-11
 
 ### Corrigé

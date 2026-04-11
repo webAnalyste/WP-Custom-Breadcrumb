@@ -382,6 +382,17 @@ class Custom_Breadcrumb_Builder
         $resolved     = [];
         $chain_source = null; // post trouvé par le segment plus interne (alimenté au fil du parcours)
 
+        $debug = defined('WP_DEBUG') && WP_DEBUG;
+        if ($debug) {
+            $wp_post = $this->context->get_post();
+            error_log(sprintf(
+                '[CB-CHAIN] Démarrage — post courant: #%d "%s" (type: %s)',
+                $wp_post ? $wp_post->ID : 0,
+                $wp_post ? get_the_title($wp_post->ID) : 'none',
+                $wp_post ? $wp_post->post_type : 'none'
+            ));
+        }
+
         for ($i = count($segments) - 1; $i >= 0; $i--) {
             $seg = $segments[$i];
             if (($seg['type'] ?? '') !== 'dynamic_cpt') {
@@ -393,8 +404,27 @@ class Custom_Breadcrumb_Builder
                 ? $chain_source
                 : $this->context->get_post();
 
+            if ($debug) {
+                error_log(sprintf(
+                    '[CB-CHAIN] seg[%d] cpt=%s chain=%s — source: #%d "%s"',
+                    $i,
+                    $seg['cpt'] ?? '?',
+                    $is_chained ? 'true' : 'false',
+                    $source_post ? $source_post->ID : 0,
+                    $source_post ? get_the_title($source_post->ID) : 'none'
+                ));
+            }
+
             $found        = $source_post ? $this->resolve_dynamic_cpt_post($seg, $source_post) : null;
             $resolved[$i] = $found;
+
+            if ($debug) {
+                error_log(sprintf(
+                    '[CB-CHAIN] seg[%d] résultat: %s',
+                    $i,
+                    $found ? sprintf('#%d "%s"', $found->ID, get_the_title($found->ID)) : 'NULL'
+                ));
+            }
 
             if ($found) {
                 $chain_source = $found; // devient la source pour les segments encore plus externes
@@ -553,10 +583,32 @@ class Custom_Breadcrumb_Builder
         ]);
 
         if (!$query->have_posts()) {
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log(sprintf(
+                    '[CB-CHAIN] resolve(%s) depuis #%d "%s" — WP_Query 0 résultat. tax_query=%s exclude=%s',
+                    $target_cpt,
+                    $post->ID,
+                    get_the_title($post->ID),
+                    wp_json_encode($tax_query),
+                    implode(',', $exclude)
+                ));
+            }
             return null;
         }
 
         $candidates = $query->posts;
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            $names = array_map(fn($p) => sprintf('#%d "%s"', $p->ID, get_the_title($p->ID)), $candidates);
+            error_log(sprintf(
+                '[CB-CHAIN] resolve(%s) depuis #%d "%s" — %d candidat(s): %s | post_filters=%s',
+                $target_cpt,
+                $post->ID,
+                get_the_title($post->ID),
+                count($candidates),
+                implode(', ', $names),
+                wp_json_encode($post_filters)
+            ));
+        }
 
         if (!empty($post_filters)) {
             $level_info = [];
@@ -633,8 +685,22 @@ class Custom_Breadcrumb_Builder
                 );
 
                 if (!$this->compare_values($current_val, $operator, $target_val)) {
+                    if (defined('WP_DEBUG') && WP_DEBUG) {
+                        error_log(sprintf(
+                            '[CB-CHAIN] candidat #%d "%s" REJETÉ: source_val=%d %s target_val=%d (taxo=%s)',
+                            $candidate->ID, get_the_title($candidate->ID),
+                            $current_val, $operator, $target_val, $taxonomy
+                        ));
+                    }
                     $candidate_ok = false;
                     break;
+                }
+                if (defined('WP_DEBUG') && WP_DEBUG) {
+                    error_log(sprintf(
+                        '[CB-CHAIN] candidat #%d "%s" OK: source_val=%d %s target_val=%d (taxo=%s)',
+                        $candidate->ID, get_the_title($candidate->ID),
+                        $current_val, $operator, $target_val, $taxonomy
+                    ));
                 }
             }
             if ($candidate_ok) {

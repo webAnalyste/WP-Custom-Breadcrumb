@@ -505,6 +505,24 @@ class Custom_Breadcrumb_Builder
             return null;
         }
 
+        // En mode chaîne, on cherche un POST PARENT : auto-injecter un filtre
+        // tax_level_compare '>' sur chaque taxonomie impliquée pour exclure les
+        // candidats au même niveau ou plus profond que la source (ex : autre agence
+        // avec le même terme taxo au lieu de l'agence parente).
+        if (!empty($segment['chain'])) {
+            $chain_taxes = [];
+            foreach ($conditions as $condition) {
+                $ct   = $condition['type'] ?? 'tax_match';
+                $ttax = $condition['target_tax'] ?? '';
+                if (($ct === 'tax_match' || $ct === 'tax_cross') && $ttax && !in_array($ttax, $chain_taxes, true)) {
+                    $chain_taxes[] = $ttax;
+                }
+            }
+            foreach ($chain_taxes as $ctax) {
+                $post_filters[] = ['type' => 'tax_level_compare', 'taxonomy' => $ctax, 'operator' => '>'];
+            }
+        }
+
         // Exclure le post source ET le post WP courant (évite les boucles en mode chaîne)
         $exclude      = [$post->ID];
         $current_post = $this->context->get_post();

@@ -5,6 +5,11 @@ Toutes les modifications notables de ce projet seront documentées dans ce fichi
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet adhère au [Versioning Sémantique](https://semver.org/lang/fr/).
 
+## [2.1.32] - 2026-04-11
+
+### Corrigé
+- fix: mode chaîne — segment externe trouvait une agence au même niveau taxo (même terme) au lieu du vrai parent ; auto-injection d'un filtre `tax_level_compare >` en mode chaîne pour n'accepter que des candidats taxonomiquement plus plats que la source
+
 ## [2.1.31] - 2026-04-11
 
 ### Corrigé

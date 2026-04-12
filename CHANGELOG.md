@@ -5,6 +5,11 @@ Toutes les modifications notables de ce projet seront documentées dans ce fichi
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet adhère au [Versioning Sémantique](https://semver.org/lang/fr/).
 
+## [2.2.3] - 2026-04-12
+
+### Ajouté
+- Fix tax_similarity: ajoute tax_query EXISTS pour trouver candidats sans tax_match
+
 ## [2.2.2] - 2026-04-12
 
 ### Ajouté

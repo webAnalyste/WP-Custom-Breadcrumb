@@ -8,6 +8,11 @@ et ce projet adhère au [Versioning Sémantique](https://semver.org/lang/fr/).
 ## [2.2.0] - 2026-04-12
 
 ### Ajouté
+- Ajout condition tax_similarity pour comparer similarité termes taxonomies
+
+## [2.2.0] - 2026-04-12
+
+### Ajouté
 - **Nouvelle condition `tax_similarity`** : Compare la similarité textuelle entre termes de deux taxonomies (identiques ou différentes)
   - Interface admin : sélecteurs source_tax, target_tax, seuil de similarité (0-100%, défaut 80%)
   - Algorithme : distance de Levenshtein normalisée pour calculer la similarité entre noms de termes

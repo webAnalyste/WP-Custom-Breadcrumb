@@ -665,13 +665,51 @@ class Custom_Breadcrumb_Builder
                     $tgt_tax   = $filter['target_tax'] ?? '';
                     $threshold = intval($filter['threshold'] ?? 80);
 
-                    if (empty($src_tax) || empty($tgt_tax)) continue;
+                    if (empty($src_tax) || empty($tgt_tax)) {
+                        $this->debug_log[] = '  tax_similarity: taxonomies vides ignorées';
+                        continue;
+                    }
 
                     $current_terms = get_the_terms($post->ID, $src_tax);
                     $target_terms  = get_the_terms($candidate->ID, $tgt_tax);
 
-                    if (empty($current_terms) || is_wp_error($current_terms) ||
-                        empty($target_terms)   || is_wp_error($target_terms)) {
+                    // Debug détaillé pour diagnostiquer les taxonomies
+                    if (is_wp_error($current_terms)) {
+                        $this->debug_log[] = sprintf(
+                            '  candidat #%d "%s" REJETÉ: taxonomie source "%s" invalide sur post #%d (WP_Error: %s)',
+                            $candidate->ID, get_the_title($candidate->ID),
+                            $src_tax, $post->ID, $current_terms->get_error_message()
+                        );
+                        $candidate_ok = false;
+                        break;
+                    }
+
+                    if (is_wp_error($target_terms)) {
+                        $this->debug_log[] = sprintf(
+                            '  candidat #%d "%s" REJETÉ: taxonomie cible "%s" invalide sur candidat #%d (WP_Error: %s)',
+                            $candidate->ID, get_the_title($candidate->ID),
+                            $tgt_tax, $candidate->ID, $target_terms->get_error_message()
+                        );
+                        $candidate_ok = false;
+                        break;
+                    }
+
+                    if (empty($current_terms)) {
+                        $this->debug_log[] = sprintf(
+                            '  candidat #%d "%s" REJETÉ: post courant #%d n\'a aucun terme dans taxonomie "%s"',
+                            $candidate->ID, get_the_title($candidate->ID),
+                            $post->ID, $src_tax
+                        );
+                        $candidate_ok = false;
+                        break;
+                    }
+
+                    if (empty($target_terms)) {
+                        $this->debug_log[] = sprintf(
+                            '  candidat #%d "%s" REJETÉ: candidat n\'a aucun terme dans taxonomie "%s"',
+                            $candidate->ID, get_the_title($candidate->ID),
+                            $tgt_tax
+                        );
                         $candidate_ok = false;
                         break;
                     }

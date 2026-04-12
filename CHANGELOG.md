@@ -5,6 +5,20 @@ Toutes les modifications notables de ce projet seront documentées dans ce fichi
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet adhère au [Versioning Sémantique](https://semver.org/lang/fr/).
 
+## [2.2.0] - 2026-04-12
+
+### Ajouté
+- **Nouvelle condition `tax_similarity`** : Compare la similarité textuelle entre termes de deux taxonomies (identiques ou différentes)
+  - Interface admin : sélecteurs source_tax, target_tax, seuil de similarité (0-100%, défaut 80%)
+  - Algorithme : distance de Levenshtein normalisée pour calculer la similarité entre noms de termes
+  - Filtrage post-WP_Query : ne retient que les candidats dont la similarité ≥ seuil
+  - Aide contextuelle détaillée avec exemples concrets (ex: "Google Analytics" vs "Google Analytics 4" → 85%)
+  - Debug logs : affiche similarité calculée, termes comparés, taxonomies utilisées
+  - Cas d'usage : matcher des termes proches mais non identiques entre CPT différents
+  - Documentation complète : `docs/CONDITION-TAX-SIMILARITY.md`
+  - Seuil recommandé : 70-90% selon le niveau de précision souhaité
+  - Compatible avec mode chaîne (chain=true) et combinable avec autres conditions (logique ET)
+
 ## [2.1.36] - 2026-04-11
 
 ### Ajouté

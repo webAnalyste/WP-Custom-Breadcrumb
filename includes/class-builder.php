@@ -479,12 +479,23 @@ class Custom_Breadcrumb_Builder
             }
 
             if ($cond_type === 'tax_similarity') {
+                $tgt_tax = $condition['target_tax'] ?? '';
                 $this->debug_log[] = sprintf(
                     '  [tax_similarity] Condition détectée: source_tax=%s, target_tax=%s, threshold=%d',
                     $condition['source_tax'] ?? 'VIDE',
-                    $condition['target_tax'] ?? 'VIDE',
+                    $tgt_tax,
                     intval($condition['threshold'] ?? 80)
                 );
+                
+                // Ajouter un critère tax_query pour trouver tous les posts avec au moins un terme dans la taxonomie cible
+                if (!empty($tgt_tax)) {
+                    $tax_query[] = [
+                        'taxonomy' => $tgt_tax,
+                        'operator' => 'EXISTS',
+                    ];
+                    $this->debug_log[] = sprintf('  → Ajout tax_query: taxonomie %s EXISTS (trouve tous les posts avec au moins un terme)', $tgt_tax);
+                }
+                
                 $post_filters[] = $condition;
                 continue;
             }

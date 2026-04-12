@@ -16,13 +16,13 @@
     // ── Aide contextuelle par condition ─────────────────────────────────────
     function updateConditionHelp($row) {
         const condType = $row.find('.dyn-cond-type').val();
-        const $help    = $row.find('.dyn-cond-help');
+        const $help = $row.find('.dyn-cond-help');
         let html = '';
 
         if (condType === 'tax_match') {
             const srcTax = $row.find('.dyn-source-tax').val();
             const tgtTax = $row.find('.dyn-target-tax').val();
-            const mode   = $row.find('.dyn-match-mode').val() || 'exact';
+            const mode = $row.find('.dyn-match-mode').val() || 'exact';
 
             const modeInfo = {
                 'exact': {
@@ -59,14 +59,14 @@
 
         } else if (condType === 'tax_level_compare') {
             const tax = $row.find('.dyn-tlc-tax').val();
-            const op  = $row.find('.dyn-tlc-op').val() || '=';
+            const op = $row.find('.dyn-tlc-op').val() || '=';
 
             const opInfo = {
-                '>':  'Courant <strong>plus profond</strong> que la cible — trouve des posts à un niveau <em>moins spécifique</em>.<br><small>Ex : page_level courant = 3, post cible retenu = level 1 ou 2.</small>',
+                '>': 'Courant <strong>plus profond</strong> que la cible — trouve des posts à un niveau <em>moins spécifique</em>.<br><small>Ex : page_level courant = 3, post cible retenu = level 1 ou 2.</small>',
                 '>=': 'Courant <strong>plus profond ou au même niveau</strong> que la cible.',
-                '<':  'Courant <strong>moins profond</strong> que la cible — trouve des posts <em>plus spécifiques</em> que le post courant.',
+                '<': 'Courant <strong>moins profond</strong> que la cible — trouve des posts <em>plus spécifiques</em> que le post courant.',
                 '<=': 'Courant <strong>moins profond ou au même niveau</strong> que la cible.',
-                '=':  'Courant et cible au <strong>même niveau</strong>.<br><small>Utile pour restreindre à un seul niveau et éviter les doublons dans un breadcrumb multi-segments.</small>'
+                '=': 'Courant et cible au <strong>même niveau</strong>.<br><small>Utile pour restreindre à un seul niveau et éviter les doublons dans un breadcrumb multi-segments.</small>'
             };
 
             let taxNote = '';
@@ -81,6 +81,16 @@
                     <p class="dyn-help-body">Opérateur <strong>${esc(op)}</strong> — ${opInfo[op] || ''}</p>
                     ${taxNote}
                     <p class="dyn-help-tip">Appliqué <em>après</em> la WP_Query. Nécessite au moins une condition <em>Même terme</em> dans le même segment.</p>`;
+
+        } else if (condType === 'tax_similarity') {
+            const srcTax = $row.find('.dyn-sim-source-tax').val();
+            const tgtTax = $row.find('.dyn-sim-target-tax').val();
+            const threshold = $row.find('.dyn-sim-threshold').val() || '80';
+
+            html = `<div class="dyn-help-header"><span class="dyn-help-role dyn-help-role-filter">🔍 FILTRE</span><span class="dyn-help-subtitle">Compare la similarité textuelle entre termes de taxonomies</span></div>
+                    <p class="dyn-help-body">Compare les <strong>noms des termes</strong> entre deux taxonomies (même taxonomie ou différentes) et ne retient que les posts candidats dont le terme est <strong>similaire à ${threshold}% ou plus</strong>.</p>
+                    <p class="dyn-help-example"><strong>Exemple :</strong> Post courant a le terme "Google Analytics" dans <code>${srcTax || 'solution_category'}</code>. Le candidat a "Google Analytics 4" dans <code>${tgtTax || 'solution_category'}</code>. Similarité ≈ 85% → candidat <strong>retenu</strong> si seuil ≤ 85%.</p>
+                    <p class="dyn-help-tip">Utilise l'algorithme de <strong>distance de Levenshtein</strong> normalisée. Seuil recommandé : 70-90%. Appliqué <em>après</em> la WP_Query.</p>`;
 
         } else if (condType === 'page_level') {
             html = `<div class="dyn-help-header"><span class="dyn-help-role dyn-help-role-guard">🚦 GARDE</span><span class="dyn-help-subtitle">Décide si le segment s'exécute ou non</span></div>
@@ -119,11 +129,11 @@
 
     function buildOperatorOptions(selectedOp) {
         const ops = [
-            { v: '=',  l: '=' },
-            { v: '>',  l: '&gt;' },
+            { v: '=', l: '=' },
+            { v: '>', l: '&gt;' },
             { v: '>=', l: '&gt;=' },
             { v: '<=', l: '&lt;=' },
-            { v: '<',  l: '&lt;' },
+            { v: '<', l: '&lt;' },
         ];
         return ops.map(o => `<option value="${o.v}"${(selectedOp || '=') === o.v ? ' selected' : ''}>${o.l}</option>`).join('');
     }
@@ -134,12 +144,13 @@
         let condType = data.type || 'tax_match';
         if (condType === 'tax_cross') condType = 'tax_match';
 
-        const showMatch  = condType === 'tax_match';
-        const showPage   = condType === 'page_level';
-        const showLvl    = condType === 'tax_level_compare';
-        const srcHier    = isTaxHierarchical(data.source_tax || '');
-        const isExact    = (data.match_mode || 'exact') === 'exact';
-        const srcDepth   = (data.source_depth !== undefined && data.source_depth !== null) ? data.source_depth : '';
+        const showMatch = condType === 'tax_match';
+        const showPage = condType === 'page_level';
+        const showLvl = condType === 'tax_level_compare';
+        const showSim = condType === 'tax_similarity';
+        const srcHier = isTaxHierarchical(data.source_tax || '');
+        const isExact = (data.match_mode || 'exact') === 'exact';
+        const srcDepth = (data.source_depth !== undefined && data.source_depth !== null) ? data.source_depth : '';
 
         const $row = $(`
             <div class="dyn-condition">
@@ -148,6 +159,7 @@
                         <option value="tax_match"${showMatch ? ' selected' : ''}>Même terme (taxo)</option>
                         <option value="page_level"${showPage ? ' selected' : ''}>Niveau de page</option>
                         <option value="tax_level_compare"${showLvl ? ' selected' : ''}>Comparer profondeurs taxo</option>
+                        <option value="tax_similarity"${showSim ? ' selected' : ''}>Similarité termes taxo</option>
                     </select>
 
                     <span class="dyn-cond-tax-match"${showMatch ? '' : ' style="display:none"'}>
@@ -178,6 +190,16 @@
                         <span class="dyn-cond-label">du post courant</span>
                         <select class="dyn-tlc-op">${buildOperatorOptions(data.operator || '=')}</select>
                         <span class="dyn-cond-label">valeur du post cible</span>
+                    </span>
+
+                    <span class="dyn-cond-tax-similarity"${showSim ? '' : ' style="display:none"'}>
+                        <span class="dyn-cond-label">Similarité entre</span>
+                        <select class="dyn-sim-source-tax">${buildTaxonomyOptions(data.source_tax || '')}</select>
+                        <span class="dyn-cond-label">et</span>
+                        <select class="dyn-sim-target-tax">${buildTaxonomyOptions(data.target_tax || '')}</select>
+                        <span class="dyn-cond-label">≥</span>
+                        <input type="number" class="dyn-sim-threshold small-text" min="0" max="100" step="5" value="${data.threshold || '80'}" style="width:60px">
+                        <span class="dyn-cond-label">%</span>
                     </span>
 
                     <button type="button" class="button-link dyn-remove-condition" title="Supprimer cette condition">🗑️</button>
@@ -244,12 +266,13 @@
             $row.find('.dyn-cond-tax-match').toggle(type === 'tax_match');
             $row.find('.dyn-cond-page-level').toggle(type === 'page_level');
             $row.find('.dyn-cond-tax-level-compare').toggle(type === 'tax_level_compare');
+            $row.find('.dyn-cond-tax-similarity').toggle(type === 'tax_similarity');
             updateConditionHelp($row);
         });
 
         // Changer la taxo source → afficher/masquer le sélecteur de niveau
         $(document).on('change', '.dyn-source-tax', function () {
-            const $row    = $(this).closest('.dyn-condition');
+            const $row = $(this).closest('.dyn-condition');
             const taxName = $(this).val();
             const isExact = $row.find('.dyn-match-mode').val() === 'exact';
             const showDepth = isExact && isTaxHierarchical(taxName);
@@ -260,7 +283,7 @@
 
         // Changer le mode de correspondance → afficher/masquer le sélecteur de niveau
         $(document).on('change', '.dyn-match-mode', function () {
-            const $row    = $(this).closest('.dyn-condition');
+            const $row = $(this).closest('.dyn-condition');
             const isExact = $(this).val() === 'exact';
             const taxName = $row.find('.dyn-source-tax').val();
             const showDepth = isExact && isTaxHierarchical(taxName);
@@ -430,8 +453,11 @@
                         if (c.type === 'tax_level_compare') {
                             return `niv(${esc(c.taxonomy || '?')})${esc(c.operator || '=')}niv_cible`;
                         }
+                        if (c.type === 'tax_similarity') {
+                            return `sim(${esc(c.source_tax || '?')}≈${esc(c.target_tax || '?')})≥${c.threshold || 80}%`;
+                        }
                         const depth = c.source_depth !== undefined ? `[niv.${c.source_depth}]` : '';
-                        const mode  = c.match_mode === 'ancestors' ? '⊃' : c.match_mode === 'ancestors_or_equal' ? '⊇' : '=';
+                        const mode = c.match_mode === 'ancestors' ? '⊃' : c.match_mode === 'ancestors_or_equal' ? '⊇' : '=';
                         return `${esc(c.source_tax || '?')}${depth}${mode}${esc(c.target_tax || '?')}`;
                     }).join(', ');
                     preview += customLabel || `${segment.chain ? '🔗' : '🔧'} ${esc(segment.cpt || 'CPT')} [${condSummary}]`;
@@ -574,7 +600,7 @@
             } else if (type === 'taxonomy') {
                 segment = { type, value: $segment.find('.segment-taxonomy').val() };
             } else if (type === 'dynamic_cpt') {
-                const cpt   = $segment.find('.segment-dyn-cpt').val() || '';
+                const cpt = $segment.find('.segment-dyn-cpt').val() || '';
                 const chain = $segment.find('.segment-dyn-chain').is(':checked');
                 const conditions = [];
                 $segment.find('.dyn-condition').each(function () {
@@ -582,20 +608,28 @@
                     if (condType === 'tax_cross') condType = 'tax_match'; // compat
 
                     if (condType === 'page_level') {
-                        const op  = $(this).find('.dyn-page-op').val();
+                        const op = $(this).find('.dyn-page-op').val();
                         const val = parseInt($(this).find('.dyn-page-level-val').val() || '0', 10);
                         conditions.push({ type: 'page_level', operator: op, value: val });
 
                     } else if (condType === 'tax_level_compare') {
                         const tax = $(this).find('.dyn-tlc-tax').val();
-                        const op  = $(this).find('.dyn-tlc-op').val();
+                        const op = $(this).find('.dyn-tlc-op').val();
                         if (tax) {
                             conditions.push({ type: 'tax_level_compare', taxonomy: tax, operator: op });
                         }
 
+                    } else if (condType === 'tax_similarity') {
+                        const srcTax = $(this).find('.dyn-sim-source-tax').val();
+                        const tgtTax = $(this).find('.dyn-sim-target-tax').val();
+                        const threshold = parseInt($(this).find('.dyn-sim-threshold').val() || '80', 10);
+                        if (srcTax && tgtTax) {
+                            conditions.push({ type: 'tax_similarity', source_tax: srcTax, target_tax: tgtTax, threshold: threshold });
+                        }
+
                     } else { // tax_match
-                        const src       = $(this).find('.dyn-source-tax').val();
-                        const tgt       = $(this).find('.dyn-target-tax').val();
+                        const src = $(this).find('.dyn-source-tax').val();
+                        const tgt = $(this).find('.dyn-target-tax').val();
                         const matchMode = $(this).find('.dyn-match-mode').val() || 'exact';
                         if (src && tgt) {
                             const cond = { type: 'tax_match', source_tax: src, target_tax: tgt };

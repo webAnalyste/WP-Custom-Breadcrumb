@@ -469,6 +469,11 @@ class Custom_Breadcrumb_Builder
                 continue;
             }
 
+            if ($cond_type === 'tax_similarity') {
+                $post_filters[] = $condition;
+                continue;
+            }
+
             // tax_match
             $source_tax = $condition['source_tax'] ?? '';
             $target_tax = $condition['target_tax'] ?? '';
@@ -653,7 +658,52 @@ class Custom_Breadcrumb_Builder
         foreach ($candidates as $candidate) {
             $candidate_ok = true;
             foreach ($post_filters as $filter) {
-                if ($filter['type'] !== 'tax_level_compare') continue;
+                $filter_type = $filter['type'] ?? '';
+
+                if ($filter_type === 'tax_similarity') {
+                    $src_tax   = $filter['source_tax'] ?? '';
+                    $tgt_tax   = $filter['target_tax'] ?? '';
+                    $threshold = intval($filter['threshold'] ?? 80);
+
+                    if (empty($src_tax) || empty($tgt_tax)) continue;
+
+                    $current_terms = get_the_terms($post->ID, $src_tax);
+                    $target_terms  = get_the_terms($candidate->ID, $tgt_tax);
+
+                    if (empty($current_terms) || is_wp_error($current_terms) ||
+                        empty($target_terms)   || is_wp_error($target_terms)) {
+                        $candidate_ok = false;
+                        break;
+                    }
+
+                    $current_term = $this->get_deepest_term($current_terms);
+                    $target_term  = $this->get_deepest_term($target_terms);
+
+                    $similarity = $this->calculate_text_similarity($current_term->name, $target_term->name);
+
+                    if ($similarity < $threshold) {
+                        $this->debug_log[] = sprintf(
+                            '  candidat #%d "%s" REJETÉ: similarité %.1f%% < %d%% ("%s" vs "%s", taxo %s/%s)',
+                            $candidate->ID, get_the_title($candidate->ID),
+                            $similarity, $threshold,
+                            $current_term->name, $target_term->name,
+                            $src_tax, $tgt_tax
+                        );
+                        $candidate_ok = false;
+                        break;
+                    }
+
+                    $this->debug_log[] = sprintf(
+                        '  candidat #%d "%s" OK: similarité %.1f%% >= %d%% ("%s" vs "%s", taxo %s/%s)',
+                        $candidate->ID, get_the_title($candidate->ID),
+                        $similarity, $threshold,
+                        $current_term->name, $target_term->name,
+                        $src_tax, $tgt_tax
+                    );
+                    continue;
+                }
+
+                if ($filter_type !== 'tax_level_compare') continue;
                 $taxonomy = $filter['taxonomy'] ?? '';
                 $operator = $filter['operator'] ?? '=';
                 if (empty($taxonomy)) continue;
@@ -993,5 +1043,42 @@ class Custom_Breadcrumb_Builder
             case '<=': return $a <= $b;
             default:   return false;
         }
+    }
+
+    /**
+     * Calcule la similarité textuelle entre deux chaînes (0-100%).
+     * Utilise la distance de Levenshtein normalisée.
+     *
+     * @param string $str1 Première chaîne
+     * @param string $str2 Seconde chaîne
+     * @return float Pourcentage de similarité (0-100)
+     */
+    private function calculate_text_similarity(string $str1, string $str2): float
+    {
+        if ($str1 === $str2) {
+            return 100.0;
+        }
+
+        $str1 = mb_strtolower(trim($str1), 'UTF-8');
+        $str2 = mb_strtolower(trim($str2), 'UTF-8');
+
+        if ($str1 === '' || $str2 === '') {
+            return 0.0;
+        }
+
+        if ($str1 === $str2) {
+            return 100.0;
+        }
+
+        $max_len = max(mb_strlen($str1, 'UTF-8'), mb_strlen($str2, 'UTF-8'));
+        $distance = levenshtein($str1, $str2);
+
+        if ($distance === -1) {
+            return 0.0;
+        }
+
+        $similarity = (1 - ($distance / $max_len)) * 100;
+
+        return max(0.0, min(100.0, $similarity));
     }
 }

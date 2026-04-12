@@ -438,7 +438,16 @@ class Custom_Breadcrumb_Builder
         $target_cpt = $segment['cpt'] ?? '';
         $conditions  = $segment['conditions'] ?? [];
 
+        $this->debug_log[] = sprintf(
+            '[SEGMENT dynamic_cpt] Début résolution: CPT cible=%s, post source=#%d "%s", nb conditions=%d',
+            $target_cpt ?: 'VIDE',
+            $post->ID,
+            get_the_title($post->ID),
+            count($conditions)
+        );
+
         if (empty($target_cpt) || empty($conditions)) {
+            $this->debug_log[] = '  → Segment ignoré: CPT ou conditions vides';
             return null;
         }
 

@@ -5,10 +5,18 @@ Toutes les modifications notables de ce projet seront documentées dans ce fichi
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet adhère au [Versioning Sémantique](https://semver.org/lang/fr/).
 
-## [2.2.0] - 2026-04-12
+## [2.2.1] - 2026-04-12
+
+### Corrigé
+- **tax_similarity** : Logs de debug détaillés pour diagnostiquer taxonomies invalides ou termes manquants
+  - Log si taxonomie source/cible invalide (WP_Error avec message d'erreur)
+  - Log si post courant n'a aucun terme dans taxonomie source
+  - Log si candidat n'a aucun terme dans taxonomie cible
+  - Aide contextuelle clarifiée : source = post courant, cible = candidat
+  - Avertissement sur noms de taxonomies (ex: "category" pas "categorie")
 
 ### Ajouté
-- Ajout condition tax_similarity pour comparer similarité termes taxonomies
+- **Documentation** : Guide de debug `docs/DEBUG-TAX-SIMILARITY.md` avec checklist diagnostic complète
 
 ## [2.2.0] - 2026-04-12
 

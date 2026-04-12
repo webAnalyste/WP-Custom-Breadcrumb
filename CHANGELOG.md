@@ -7,6 +7,11 @@ et ce projet adhère au [Versioning Sémantique](https://semver.org/lang/fr/).
 
 ## [2.2.1] - 2026-04-12
 
+### Ajouté
+- Correctifs debug tax_similarity + guide diagnostic
+
+## [2.2.1] - 2026-04-12
+
 ### Corrigé
 - **tax_similarity** : Logs de debug détaillés pour diagnostiquer taxonomies invalides ou termes manquants
   - Log si taxonomie source/cible invalide (WP_Error avec message d'erreur)

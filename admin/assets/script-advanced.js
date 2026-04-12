@@ -87,13 +87,13 @@
             const tgtTax = $row.find('.dyn-sim-target-tax').val();
             const threshold = $row.find('.dyn-sim-threshold').val() || '80';
 
-            html = `<div class="dyn-help-header"><span class="dyn-help-role dyn-help-role-filter">🔍 FILTRE</span><span class="dyn-help-subtitle">Compare la similarité textuelle entre termes de taxonomies</span></div>
-                    <p class="dyn-help-body">Compare les <strong>noms des termes</strong> entre :<br>
+            html = `<div class="dyn-help-header"><span class="dyn-help-role dyn-help-role-filter">🔍 FILTRE</span><span class="dyn-help-subtitle">Compare la similarité entre slugs (valeurs) de termes</span></div>
+                    <p class="dyn-help-body">Compare les <strong>slugs (valeurs)</strong> des termes entre :<br>
                     • <strong>Taxonomie source</strong> : taxonomie du <em>post courant</em> (celui que vous visitez)<br>
                     • <strong>Taxonomie cible</strong> : taxonomie du <em>post candidat</em> (CPT du segment)<br>
                     Ne retient que les candidats dont la similarité ≥ <strong>${threshold}%</strong>.</p>
-                    <p class="dyn-help-example"><strong>Exemple :</strong> Post courant (expertise_complement) a le terme "Google Analytics" dans <code>${srcTax || 'category'}</code>. Le candidat (expertise) a "Google Analytics" dans <code>${tgtTax || 'expertise_category'}</code>. Similarité = 100% → candidat <strong>retenu</strong>.</p>
-                    <p class="dyn-help-tip">⚠️ Vérifiez que les taxonomies existent (ex: "category" pas "categorie"). Utilise la <strong>distance de Levenshtein</strong> normalisée. Seuil recommandé : 70-90%. Appliqué <em>après</em> la WP_Query.</p>`;
+                    <p class="dyn-help-example"><strong>Exemple :</strong> Post courant a le slug "google-analytics" dans <code>${srcTax || 'category'}</code>. Le candidat a "google-analytics-4" dans <code>${tgtTax || 'expertise_category'}</code>. Similarité ≈ 85% → candidat <strong>retenu</strong> si seuil ≤ 85%.</p>
+                    <p class="dyn-help-tip">⚠️ Vérifiez que les taxonomies existent (ex: "category" pas "categorie"). Compare les <strong>slugs</strong> (plus fiables que les noms). Seuil recommandé : 70-90%. Appliqué <em>après</em> la WP_Query.</p>`;
 
         } else if (condType === 'page_level') {
             html = `<div class="dyn-help-header"><span class="dyn-help-role dyn-help-role-guard">🚦 GARDE</span><span class="dyn-help-subtitle">Décide si le segment s'exécute ou non</span></div>

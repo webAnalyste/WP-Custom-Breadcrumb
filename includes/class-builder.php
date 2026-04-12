@@ -717,13 +717,15 @@ class Custom_Breadcrumb_Builder
                     $current_term = $this->get_deepest_term($current_terms);
                     $target_term  = $this->get_deepest_term($target_terms);
 
-                    $similarity = $this->calculate_text_similarity($current_term->name, $target_term->name);
+                    // Comparer les slugs (valeurs) des termes, pas les noms textuels
+                    $similarity = $this->calculate_text_similarity($current_term->slug, $target_term->slug);
 
                     if ($similarity < $threshold) {
                         $this->debug_log[] = sprintf(
-                            '  candidat #%d "%s" REJETÉ: similarité %.1f%% < %d%% ("%s" vs "%s", taxo %s/%s)',
+                            '  candidat #%d "%s" REJETÉ: similarité %.1f%% < %d%% (slug "%s" vs "%s", noms "%s" vs "%s", taxo %s/%s)',
                             $candidate->ID, get_the_title($candidate->ID),
                             $similarity, $threshold,
+                            $current_term->slug, $target_term->slug,
                             $current_term->name, $target_term->name,
                             $src_tax, $tgt_tax
                         );
@@ -732,9 +734,10 @@ class Custom_Breadcrumb_Builder
                     }
 
                     $this->debug_log[] = sprintf(
-                        '  candidat #%d "%s" OK: similarité %.1f%% >= %d%% ("%s" vs "%s", taxo %s/%s)',
+                        '  candidat #%d "%s" OK: similarité %.1f%% >= %d%% (slug "%s" vs "%s", noms "%s" vs "%s", taxo %s/%s)',
                         $candidate->ID, get_the_title($candidate->ID),
                         $similarity, $threshold,
+                        $current_term->slug, $target_term->slug,
                         $current_term->name, $target_term->name,
                         $src_tax, $tgt_tax
                     );

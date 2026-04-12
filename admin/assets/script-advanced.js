@@ -196,9 +196,9 @@
                     </span>
 
                     <span class="dyn-cond-tax-similarity"${showSim ? '' : ' style="display:none"'}>
-                        <span class="dyn-cond-label">Similarité entre</span>
+                        <span class="dyn-cond-label">Post courant dans</span>
                         <select class="dyn-sim-source-tax">${buildTaxonomyOptions(data.source_tax || '')}</select>
-                        <span class="dyn-cond-label">et</span>
+                        <span class="dyn-cond-label">≈ CPT cible dans</span>
                         <select class="dyn-sim-target-tax">${buildTaxonomyOptions(data.target_tax || '')}</select>
                         <span class="dyn-cond-label">≥</span>
                         <input type="number" class="dyn-sim-threshold small-text" min="0" max="100" step="5" value="${data.threshold || '80'}" style="width:60px">

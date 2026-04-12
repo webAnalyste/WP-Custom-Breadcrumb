@@ -470,6 +470,12 @@ class Custom_Breadcrumb_Builder
             }
 
             if ($cond_type === 'tax_similarity') {
+                $this->debug_log[] = sprintf(
+                    '  [tax_similarity] Condition détectée: source_tax=%s, target_tax=%s, threshold=%d',
+                    $condition['source_tax'] ?? 'VIDE',
+                    $condition['target_tax'] ?? 'VIDE',
+                    intval($condition['threshold'] ?? 80)
+                );
                 $post_filters[] = $condition;
                 continue;
             }
